@@ -549,3 +549,86 @@ The design document was comprehensive, but the ticket task list was too coarse f
 
 - Code commit: `16a50162277efaeb81b9853f40f1e93dd0cb7498`
 - Task file: `/home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/ttmp/2026/06/02/RAGEVAL-GOJA-RAG-STRATEGIES--goja-bleve-bleve-bindings-for-goja-javascript-runtime/tasks.md`
+
+---
+
+## Step 8: Implement Phase 0 and Phase 1 scaffold
+
+I started implementation of the goja-bleve module by fixing the local docmgr configuration, then building the native-module scaffold. The key result is that JavaScript can now `require("bleve")`, inspect the expected top-level factories, and receive Go-backed wrapper objects whose internal references are stored as non-enumerable `__bleve_ref` properties.
+
+This step deliberately does not implement concrete Bleve indexing, mappings, or search execution yet. It establishes the runtime object model and module-loading contract that later phases will build on.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Continue with phase 0 and 1, if using docmgr, do so within goja-bleve so that it picks up on the right ttmp/"
+
+**Assistant interpretation:** Begin implementation work for the first two goja-bleve phases and ensure docmgr commands use the goja-bleve ticket workspace, not the sibling rag-eval ticket root.
+
+**Inferred user intent:** Move from design/planning into code while keeping ticket bookkeeping attached to the correct `goja-bleve/ttmp/` workspace.
+
+### What I did
+
+- Fixed `goja-bleve/.ttmp.yaml` so docmgr root resolves to `goja-bleve/ttmp`
+- Renamed the Go module to `github.com/go-go-golems/goja-bleve`
+- Added Bleve, goja, goja_nodejs, and go-go-goja dependencies
+- Implemented `pkg/module.go` with `modules.NativeModule`, `NewLoader`, `Register`, `init()` registration, runtime state, exports, and `closeAll()`
+- Implemented Go-backed reference structs in `pkg/api_types.go`
+- Implemented hidden reference helpers using non-enumerable `__bleve_ref`
+- Added scaffold API files for mapping, index, query, search, batch, KNN, codec, provider, and vector support detection
+- Added `pkg/module_test.go` covering `require("bleve")`, factory exports, hidden-reference enumeration behavior, JSON behavior, and typed-ref errors
+- Replaced the template README with goja-bleve Phase 0/1 documentation
+- Ran validation commands:
+  - `go test ./... -count=1`
+  - `GOWORK=off go test ./... -count=1`
+- Checked completed docmgr tasks 1, 2, 3, 4, 5, 6, 7, 8, and 11
+
+### Why
+
+The module needs a stable object/reference model before concrete builders are implemented. If later phases expose plain JS objects first and retrofit Go-backed refs later, every API method would need to be revisited. Starting with hidden Go refs makes type safety and lifecycle behavior central from the first commit.
+
+### What worked
+
+- `require("bleve")` works through the go-go-goja native module registry
+- The module exposes the expected Phase 0 factory names
+- Wrapper refs are not visible through `Object.keys()` and are not included in `JSON.stringify()`
+- Both workspace and `GOWORK=off` test runs pass
+
+### What didn't work
+
+- Initial `GOWORK=off go test ./... -count=1` failed because `go.sum` lacked transitive entries for go-go-goja provider and goja_nodejs packages
+- Running `go mod tidy` resolved the missing checksum entries and made `GOWORK=off` validation pass
+
+### What I learned
+
+- The existing `.ttmp.yaml` in `goja-bleve` pointed at the sibling rag-eval `ttmp/`, so docmgr commands would have updated the wrong workspace unless corrected
+- A small provider wrapper imports enough of `go-go-goja/pkg/xgoja/providerapi` to require additional transitive checksums under `GOWORK=off`
+
+### What was tricky to build
+
+- The hidden-reference helper needs to set the Go pointer first, then redefine the property as non-enumerable/non-writable/non-configurable. This preserves the pointer object while hiding it from ordinary JavaScript inspection.
+- The Phase 1 task list includes operational lifecycle cases that need real index and batch methods. I completed the core ref model and left the deeper wrong-wrapper/batch lifecycle tests for the phases where those methods exist.
+
+### What warrants a second pair of eyes
+
+- Whether the package should remain named `pkg` or be renamed to a domain package name such as `gojableve`. The current package name matches the template layout but is not ideal for import readability.
+- Whether `RegisterProvider` belongs in `pkg/provider.go` or should move to a dedicated `pkg/xgoja/providers/bleve` package once Phase 7 begins.
+
+### What should be done in the future
+
+- Continue Phase 1 by adding wrong-wrapper tests against real builder methods once Phase 2 exposes them.
+- Start Phase 2 mapping builders: text/keyword/number/datetime field builders, document mappings, and index mappings.
+
+### Code review instructions
+
+- Start with `pkg/module.go` for module loading and exported factory names
+- Review `pkg/api_types.go` for reference structs and `__bleve_ref` behavior
+- Review `pkg/module_test.go` for integration and hidden-ref tests
+- Validate with:
+  - `go test ./... -count=1`
+  - `GOWORK=off go test ./... -count=1`
+
+### Technical details
+
+- `require("bleve")` exports: `version`, `vectorSupport`, `mapping`, `indexMapping`, `docMapping`, `documentMapping`, `field`, `search`, `searchRequest`, `create`, `open`, `memory`, `matchAll`, and `matchNone`
+- Vector support flag is compiled from `pkg/vector_support.go` and `pkg/vector_support_vectors.go`
+- Hidden ref key: `__bleve_ref`

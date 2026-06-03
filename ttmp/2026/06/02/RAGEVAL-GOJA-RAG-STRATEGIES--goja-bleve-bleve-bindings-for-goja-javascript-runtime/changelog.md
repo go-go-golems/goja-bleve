@@ -87,3 +87,24 @@ Recorded Step 7 in the investigation diary: committed Bleve KNN experiment and e
 
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/ttmp/2026/06/02/RAGEVAL-GOJA-RAG-STRATEGIES--goja-bleve-bleve-bindings-for-goja-javascript-runtime/reference/01-investigation-diary.md — Step 7 planning and commit diary
 
+
+## 2026-06-02
+
+Implemented Phase 0 and the core Phase 1 scaffold: module path/dependencies, require('bleve') native loader, runtime state, hidden Go refs, vector support detection, provider wrapper, README, and smoke/reference tests.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/README.md — Phase 0/1 usage and vector setup documentation
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/api_types.go — Go-backed wrapper refs and hidden __bleve_ref helpers
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/module.go — Native module loader
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/module_test.go — require('bleve') and hidden-reference tests
+
+
+## 2026-06-02
+
+Recorded Step 8 diary entry for Phase 0/1 scaffold implementation and validation.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/ttmp/2026/06/02/RAGEVAL-GOJA-RAG-STRATEGIES--goja-bleve-bleve-bindings-for-goja-javascript-runtime/reference/01-investigation-diary.md — Step 8 implementation diary
+

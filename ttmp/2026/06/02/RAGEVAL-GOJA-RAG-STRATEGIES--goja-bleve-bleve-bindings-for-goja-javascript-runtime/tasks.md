@@ -4,11 +4,11 @@
 
 ### Phase 0: Repository baseline and implementation scaffolding
 
-- [ ] Create the package layout under `goja-bleve/pkg/` with files aligned to the design document: `module.go`, `api_types.go`, `api_mapping.go`, `api_index.go`, `api_query.go`, `api_search.go`, `api_batch.go`, `api_knn.go`, `codec.go`, `provider.go`, and test files.
-- [ ] Add or verify module metadata in `go.mod`: Bleve v2 dependency, `go-go-goja` provider API dependency, and any test-only dependencies needed for goja runtime integration tests.
-- [ ] Define the top-level module name as `require("bleve")` and ensure the Go package exposes a `modules.NativeModule` implementation consistent with `go-go-goja/modules/common.go` and `goja-text/pkg/extract/module.go`.
-- [ ] Add a minimal smoke test that starts a `goja.Runtime`, loads the native module, and verifies that `require("bleve")` exposes the expected top-level factories.
-- [ ] Add README or package documentation describing that vector/KNN support requires `-tags=vectors` and the FAISS linker setup documented in the RAG evaluation system.
+- [x] Create the package layout under `goja-bleve/pkg/` with files aligned to the design document: `module.go`, `api_types.go`, `api_mapping.go`, `api_index.go`, `api_query.go`, `api_search.go`, `api_batch.go`, `api_knn.go`, `codec.go`, `provider.go`, and test files.
+- [x] Add or verify module metadata in `go.mod`: Bleve v2 dependency, `go-go-goja` provider API dependency, and any test-only dependencies needed for goja runtime integration tests.
+- [x] Define the top-level module name as `require("bleve")` and ensure the Go package exposes a `modules.NativeModule` implementation consistent with `go-go-goja/modules/common.go` and `goja-text/pkg/extract/module.go`.
+- [x] Add a minimal smoke test that starts a `goja.Runtime`, loads the native module, and verifies that `require("bleve")` exposes the expected top-level factories.
+- [x] Add README or package documentation describing that vector/KNN support requires `-tags=vectors` and the FAISS linker setup documented in the RAG evaluation system.
 
 **Done when:** `go test ./...` passes for the non-vector build and the module can be required from JavaScript without exposing any vector-only APIs incorrectly.
 
@@ -16,12 +16,12 @@
 
 ### Phase 1: Runtime object model and Go-backed references
 
-- [ ] Implement `moduleRuntime` with references to the `goja.Runtime`, exported module object, open index registry, vector support flag, and cleanup hooks.
-- [ ] Implement the hidden-reference helper pattern based on geppetto: `attachRef(value, ref)` and `getRef[T](value, expectedType)` using a non-enumerable `__bleve_ref` property.
-- [ ] Define Go-backed reference structs for each JS wrapper: `indexRef`, `mappingRef`, `docMappingRef`, `fieldMappingRef`, `queryRef`, `searchRequestRef`, `batchRef`, `knnRef`, and result wrappers where needed.
+- [x] Implement `moduleRuntime` with references to the `goja.Runtime`, exported module object, open index registry, vector support flag, and cleanup hooks.
+- [x] Implement the hidden-reference helper pattern based on geppetto: `attachRef(value, ref)` and `getRef[T](value, expectedType)` using a non-enumerable `__bleve_ref` property.
+- [x] Define Go-backed reference structs for each JS wrapper: `indexRef`, `mappingRef`, `docMappingRef`, `fieldMappingRef`, `queryRef`, `searchRequestRef`, `batchRef`, `knnRef`, and result wrappers where needed.
 - [ ] Define consistent error behavior for wrong wrapper types, missing refs, closed indexes, double-close, and attempts to reuse batches after execution.
 - [ ] Add tests that pass the wrong JS objects into builder methods and verify that errors are clear and type-specific rather than panics.
-- [ ] Add tests that prove wrapper objects do not expose implementation refs during normal JS enumeration or JSON serialization.
+- [x] Add tests that prove wrapper objects do not expose implementation refs during normal JS enumeration or JSON serialization.
 
 **Done when:** every public builder method accepts only valid wrapper objects, rejects invalid values with useful errors, and preserves type safety through Go refs rather than dynamic JS maps.
 
