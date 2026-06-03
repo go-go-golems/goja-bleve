@@ -31,6 +31,12 @@ RelatedFiles:
       Note: |-
         KNN search request builder API
         Hybrid score-fusion builder methods
+    - Path: pkg/module.go
+      Note: Native module registration and TypeScript descriptor
+    - Path: pkg/provider.go
+      Note: Direct provider registration helper
+    - Path: pkg/provider_test.go
+      Note: Provider and TypeScript discovery tests
     - Path: pkg/score_options_test.go
       Note: Score option validation tests
     - Path: pkg/vector_api.go
@@ -41,12 +47,17 @@ RelatedFiles:
       Note: |-
         Vector-tagged KNN integration and error-path tests
         Vector-tagged hybrid RRF/RSF tests
+    - Path: pkg/xgoja/providers/bleve/bleve.go
+      Note: Xgoja provider registration
+    - Path: pkg/xgoja/providers/bleve/bleve_test.go
+      Note: Xgoja provider registration tests
 ExternalSources: []
 Summary: Chronological investigation diary for goja-bleve design, FAISS build, and vector search experiment.
 LastUpdated: 2026-06-02T22:30:00-04:00
 WhatFor: Track design decisions, FAISS build steps, and experiment progress
 WhenToUse: When resuming work on the goja-bleve module or FAISS/vector experiments
 ---
+
 
 
 
@@ -1194,3 +1205,87 @@ Phase 5 proved pure KNN. RAG retrieval usually needs hybrid text+vector ranking,
 ### Technical details
 
 Successful hybrid jsverb output returns `chunk-1` first with score `0.8333333333333333`, followed by `chunk-3` with score `0.5`, `scoreMode: "rrf"`, and `vectorSupport: true`.
+
+---
+
+## Step 15: Complete Phase 7 provider and host integration
+
+I completed the provider/host integration phase by turning the existing provider scaffolding into a tested contract. The native module already registered itself through `modules.Register(&module{})`, and the xgoja provider package already exposed `goja-bleve`; this step added verification, minimal TypeScript discovery support, and explicit host policy documentation.
+
+The important outcome is that host applications can now rely on two supported paths: direct `require.Registry` registration via `bleve.Register(reg)` and xgoja provider registration via `pkg/xgoja/providers/bleve.Register(registry)`. The module remains deliberately explicit about index lifecycle and path policy: scripts call `index.close()`, while embedding hosts decide whether filesystem paths are unrestricted, sandboxed, or mediated by a future wrapper.
+
+### Prompt Context
+
+**User prompt (verbatim):** "continue"
+
+**Assistant interpretation:** Continue from Phase 6 into Phase 7 provider registration and host integration.
+
+**Inferred user intent:** Keep moving through the roadmap, preserving validation, ticket state, and commit hygiene.
+
+**Commit (code):** pending — "Add provider integration tests and TypeScript descriptor"
+
+### What I did
+
+- Added a minimal `modules.TypeScriptDeclarer` implementation to the native `bleve` module in `pkg/module.go`.
+- Added `pkg/provider_test.go` to verify:
+  - default module registry registration,
+  - module name,
+  - TypeScript descriptor availability,
+  - direct `RegisterProvider` registration,
+  - provider-created loader can be installed into a `require.Registry` and required from JavaScript.
+- Added `pkg/xgoja/providers/bleve/bleve_test.go` to verify the xgoja provider package registers `bleve` under package id `goja-bleve`.
+- Updated `pkg/provider.go` comments to document that provider-level config is intentionally absent for now.
+- Updated `README.md` with direct-registration, xgoja provider-registration, path-policy, lifecycle, and RAG-evaluation import guidance.
+- Checked all Phase 7 tasks in `tasks.md`.
+
+### Why
+
+Provider integration is the boundary between the native module and host applications. Tests need to prove that the provider registry can resolve the module and that the resulting loader works in an actual `goja` runtime, not just that the package compiles.
+
+### What worked
+
+- Direct provider registration resolves `goja-bleve` / `bleve` and can load the module into a fresh goja runtime.
+- The xgoja provider package resolves the module using the same package id used by `cmd/goja-bleve/xgoja.yaml`.
+- The module now exposes a minimal TypeScript module descriptor, enough for provider discovery tests and a foundation for Phase 8.
+- Full non-vector, workspace-off, vector/FAISS, generated command, and jsverb smoke validations passed.
+
+### What didn't work
+
+- My first helper for TypeScript function-name testing assumed `spec.Function` had a `GetName()` method. It does not; the test now uses the concrete `spec.Function.Name` field.
+- Phase 7 originally asked for “TypeScript declaration availability through provider APIs,” but `providerapi.Module` does not itself carry TypeScript declarations. I validated TypeScript availability through the registered native module and provider loader availability through providerapi, then left full declaration generation/golden tests for Phase 8.
+
+### What I learned
+
+- `providerapi.Registry` stores module factories and metadata, while TypeScript declaration support remains an optional interface on the native module itself.
+- The existing `pkg/xgoja/providers/bleve` package follows the `goja-text` provider pattern and did not need structural changes; it needed regression tests.
+
+### What was tricky to build
+
+- Avoiding import cycles required testing the root provider helper in `pkg/provider_test.go` and the xgoja provider package in its own package test under `pkg/xgoja/providers/bleve`.
+- Host configuration policy is intentionally not implemented yet because unrestricted `bleve.create(path)` and `bleve.open(path)` are already part of the public API. A real sandbox policy needs host-level requirements rather than a premature generic schema.
+
+### What warrants a second pair of eyes
+
+- Whether provider-level config should be introduced in Phase 9 for allowed index roots and cleanup behavior.
+- Whether the minimal TypeScript descriptor is too broad or too incomplete before Phase 8 expands it into a fully reviewed declaration set.
+- Whether host applications should get an explicit runtime shutdown hook that calls the module runtime's internal `closeAll()`.
+
+### What should be done in the future
+
+- Phase 8 should replace the minimal TypeScript descriptor with full declarations, examples, quickstart docs, and golden declaration tests.
+- Phase 9 should revisit path-safety policy and auto-cleanup behavior with concrete host requirements.
+
+### Code review instructions
+
+- Review `pkg/module.go` for the minimal `TypeScriptModule()` descriptor and existing `init()` registration.
+- Review `pkg/provider.go` and `pkg/provider_test.go` for direct provider registration behavior.
+- Review `pkg/xgoja/providers/bleve/bleve.go` and `bleve_test.go` for xgoja provider-package behavior.
+- Review `README.md` provider and host integration guidance.
+- Validate with:
+  - `go test ./... -count=1`
+  - `GOWORK=off go test ./... -count=1`
+  - `GOWORK=off CGO_LDFLAGS="-L/usr/local/lib -lfaiss_c -lfaiss -lstdc++ -lm" go test -tags=vectors -ldflags "-r /usr/local/lib" ./pkg -count=1`
+
+### Technical details
+
+The provider package id remains `goja-bleve`; the JavaScript module name remains `bleve`; xgoja specs should mount it with `package: goja-bleve`, `name: bleve`, and `as: bleve`.

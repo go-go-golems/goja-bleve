@@ -103,12 +103,12 @@
 
 ### Phase 7: Provider registration and host integration
 
-- [ ] Implement `pkg/provider.go` with `providerapi.Module` registration so host applications can load the module through the standard go-go-goja provider registry.
-- [ ] Add an `init()` registration path matching existing modules and ensure there are no import cycles.
-- [ ] Define configuration options for host services if needed: default index root, allowed paths, vector support policy, and index cleanup behavior.
-- [ ] Wire the module into an integration host or test provider that starts a goja engine and uses `require("bleve")`.
-- [ ] Add tests that verify module registration, module name, exports, and TypeScript declaration availability through provider APIs.
-- [ ] Document how RAG evaluation scripts should import and use the module alongside `fs`, `db`, `geppetto`, and `goja-text`.
+- [x] Implement `pkg/provider.go` with `providerapi.Module` registration so host applications can load the module through the standard go-go-goja provider registry.
+- [x] Add an `init()` registration path matching existing modules and ensure there are no import cycles.
+- [x] Define configuration options for host services if needed: default index root, allowed paths, vector support policy, and index cleanup behavior.
+- [x] Wire the module into an integration host or test provider that starts a goja engine and uses `require("bleve")`.
+- [x] Add tests that verify module registration, module name, exports, and TypeScript declaration availability through provider APIs.
+- [x] Document how RAG evaluation scripts should import and use the module alongside `fs`, `db`, `geppetto`, and `goja-text`.
 
 **Done when:** a host application can register goja-bleve and JavaScript can `require("bleve")` without manual module wiring.
 

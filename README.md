@@ -2,12 +2,13 @@
 
 `goja-bleve` is a native Go module for the go-go-goja runtime. It exposes Bleve full-text and vector search through `require("bleve")`.
 
-The implementation currently includes the Phase 5 core surface:
+The implementation currently includes the Phase 7 core surface:
 
 - JavaScript can `require("bleve")`
 - JavaScript wrapper objects carry non-enumerable Go-backed references via `__bleve_ref`
-- mapping, in-memory/persistent index, query, search request, batch, and vector/KNN builders are implemented
+- mapping, in-memory/persistent index, query, search request, batch, vector/KNN, and hybrid scoring builders are implemented
 - vector support is detected at build time through the `vectors` build tag and reports clear errors in non-vector builds
+- native-module and xgoja provider registration are available for host applications
 
 ## Minimal JavaScript shape
 
@@ -22,7 +23,7 @@ const query = bleve.matchAll()
 const request = bleve.search()
 ```
 
-The mapping factories expose terminal `.build()` methods, and search requests can combine ordinary Bleve queries with KNN clauses when the host binary is built with vector support. Hybrid score fusion is available through Bleve's RRF/RSF scoring modes. Later phases will add TypeScript declarations.
+The mapping factories expose terminal `.build()` methods, and search requests can combine ordinary Bleve queries with KNN clauses when the host binary is built with vector support. Hybrid score fusion is available through Bleve's RRF/RSF scoring modes. A minimal TypeScript descriptor is available for provider discovery; Phase 8 will expand it into full API documentation and golden declaration tests.
 
 ## Mapping API scope in the current phase
 
@@ -95,6 +96,41 @@ The detailed FAISS build instructions live in:
 ```text
 /home/manuel/workspaces/2026-05-27/rag-evaluation-system/2026-05-27--rag-evaluation-system/docs/howto-compile-faiss-for-bleve-vectors.md
 ```
+
+## Provider and host integration
+
+Host applications can register the module directly with a `goja_nodejs/require.Registry`:
+
+```go
+reg := require.NewRegistry()
+bleve.Register(reg)
+reg.Enable(vm)
+```
+
+xgoja hosts should use the provider package:
+
+```go
+registry := providerapi.NewRegistry()
+err := bleveprovider.Register(registry)
+```
+
+The provider package id is `goja-bleve`, and the JavaScript module name is `bleve`, so xgoja specs should mount it as:
+
+```yaml
+packages:
+  - id: goja-bleve
+    import: github.com/go-go-golems/goja-bleve/pkg/xgoja/providers/bleve
+runtimes:
+  main:
+    modules:
+      - package: goja-bleve
+        name: bleve
+        as: bleve
+```
+
+There is currently no provider-level configuration schema. Path policy is deliberately a host concern: scripts can call `bleve.create(path)` and `bleve.open(path)`, so applications embedding the module should decide whether paths are unrestricted, sandboxed to a root, or mediated through a future host wrapper. Index lifecycle is explicit: scripts should call `index.close()` when done. The module runtime tracks open indexes internally for cleanup support, but the public host policy remains explicit-close-first.
+
+RAG evaluation scripts can load `bleve` alongside other runtime modules such as `fs`, database modules, `geppetto`, and `goja-text`. Use `fs`/database modules to read source chunks, construct explicit `bleve.mapping()` definitions, batch-index chunks through `idx.newBatch()`, and run BM25/KNN/hybrid requests through one `idx.search(req)` call.
 
 ## xgoja/jsverb validation
 

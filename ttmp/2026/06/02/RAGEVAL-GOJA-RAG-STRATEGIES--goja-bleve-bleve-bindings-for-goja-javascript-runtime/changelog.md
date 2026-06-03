@@ -188,3 +188,13 @@ Step 14: Implemented Phase 6 hybrid score fusion with RRF/RSF builder methods, t
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/cmd/goja-bleve/jsverbs/vector.js — Hybrid jsverb validation
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/api_search.go — Score fusion builder implementation
 
+
+## 2026-06-03
+
+Step 15: Completed Phase 7 provider/host integration with TypeScript descriptor, provider tests, and host policy docs
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/module.go — TypeScript descriptor and init registration
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/provider_test.go — Provider integration validation
+

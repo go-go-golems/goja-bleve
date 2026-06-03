@@ -8,8 +8,9 @@ import (
 const ProviderPackageID = "goja-bleve"
 
 // RegisterProvider exposes the bleve native module through the xgoja provider
-// registry. Phase 7 will add configuration once host path and lifecycle policy
-// decisions are implemented.
+// registry. The module currently has no provider-level configuration schema:
+// index path policy and runtime cleanup are host-application responsibilities.
+// The JavaScript API still makes lifecycle explicit through index.close().
 func RegisterProvider(registry *providerapi.Registry) error {
 	return registry.Package(ProviderPackageID, providerapi.Module{
 		Name:        ModuleName,

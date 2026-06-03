@@ -6,6 +6,7 @@ import (
 	"github.com/dop251/goja"
 	"github.com/dop251/goja_nodejs/require"
 	"github.com/go-go-golems/go-go-goja/modules"
+	"github.com/go-go-golems/go-go-goja/pkg/tsgen/spec"
 )
 
 const (
@@ -18,6 +19,7 @@ const (
 type module struct{}
 
 var _ modules.NativeModule = (*module)(nil)
+var _ modules.TypeScriptDeclarer = (*module)(nil)
 
 // NewLoader returns the native-module loader for direct registration with a
 // goja_nodejs require.Registry.
@@ -35,6 +37,60 @@ func Register(reg *require.Registry) {
 }
 
 func (module) Name() string { return ModuleName }
+
+func (module) TypeScriptModule() *spec.Module {
+	return &spec.Module{
+		Name:        ModuleName,
+		Description: "Bleve full-text, vector, and hybrid search builders for goja.",
+		RawDTS: []string{
+			"export type Vector = number[] | Float32Array | Float64Array;",
+			"export type ScoreMode = 'default' | 'none' | 'rrf' | 'rsf';",
+			"export interface MappingBuilder { build(): Mapping; }",
+			"export interface DocumentMappingBuilder { dynamic(enabled: boolean): this; enabled(enabled: boolean): this; field(name: string, field: FieldMapping | FieldBuilder): this; properties(fields: Record<string, FieldMapping | FieldBuilder>): this; build(): DocumentMapping; }",
+			"export interface FieldBuilder { text(): this; keyword(): this; number(): this; datetime(): this; boolean(): this; geoPoint(): this; geoShape(): this; ip(): this; disabled(): this; vector(dims: number): this; vectorBase64(dims: number): this; name(name: string): this; analyzer(name: string): this; store(enabled: boolean): this; index(enabled: boolean): this; docValues(enabled: boolean): this; includeTermVectors(enabled: boolean): this; includeInAll(enabled: boolean): this; similarity(name: string): this; optimizedFor(name: string): this; build(): FieldMapping; }",
+			"export interface QueryBuilder { field(name: string): this; boost(value: number): this; build?(): Query; }",
+			"export interface BoolQueryBuilder extends QueryBuilder { addMust(...queries: Query[]): this; addShould(...queries: Query[]): this; addMustNot(...queries: Query[]): this; }",
+			"export interface SearchRequestBuilder { query(query: Query): this; size(n: number): this; from(n: number): this; fields(names: string[]): this; sort(names: string[]): this; highlight(fields?: string[] | string, style?: string): this; explain(enabled: boolean): this; score(mode: ScoreMode): this; scoreRankConstant(n: number): this; scoreWindowSize(n: number): this; knnOperator(operator: 'or' | 'and'): this; knn(field: string, vector: Vector, k: number, boost?: number): this; build(): SearchRequest; }",
+			"export interface IndexBuilder { mapping(mapping: Mapping | MappingBuilder): this; name(name: string): this; build(): Index; }",
+			"export interface Index { index(id: string, doc: unknown): void; delete(id: string): void; search(request: SearchRequest): SearchResult; docCount(): number; newBatch(): Batch; batch(): Batch; close(): void; }",
+			"export interface Batch { index(id: string, doc: unknown): this; delete(id: string): this; size(): number; operationCount(): number; reset(): this; execute(): void; }",
+			"export interface SearchResult { total: number; maxScore: number; took: string; hits: SearchHit[]; }",
+			"export interface SearchHit { id: string; score: number; fields: Record<string, unknown>; fragments?: unknown; locations?: unknown; sort?: unknown[]; explanation?: unknown; scoreBreakdown?: unknown; }",
+			"export interface Mapping { readonly type: 'mapping'; }",
+			"export interface DocumentMapping { readonly type: 'documentMapping'; }",
+			"export interface FieldMapping { readonly type: 'fieldMapping'; }",
+			"export interface Query { readonly type: 'query'; }",
+			"export interface SearchRequest { readonly type: 'searchRequest'; }",
+		},
+		Functions: []spec.Function{
+			{Name: "mapping", Returns: spec.Named("MappingBuilder")},
+			{Name: "indexMapping", Returns: spec.Named("MappingBuilder")},
+			{Name: "docMapping", Returns: spec.Named("DocumentMappingBuilder")},
+			{Name: "documentMapping", Returns: spec.Named("DocumentMappingBuilder")},
+			{Name: "field", Returns: spec.Named("FieldBuilder")},
+			{Name: "search", Returns: spec.Named("SearchRequestBuilder")},
+			{Name: "searchRequest", Returns: spec.Named("SearchRequestBuilder")},
+			{Name: "create", Params: []spec.Param{{Name: "path", Type: spec.String()}}, Returns: spec.Named("IndexBuilder")},
+			{Name: "open", Params: []spec.Param{{Name: "path", Type: spec.String()}}, Returns: spec.Named("IndexBuilder")},
+			{Name: "memory", Returns: spec.Named("IndexBuilder")},
+			{Name: "match", Params: []spec.Param{{Name: "text", Type: spec.String()}}, Returns: spec.Named("QueryBuilder")},
+			{Name: "matchPhrase", Params: []spec.Param{{Name: "text", Type: spec.String()}}, Returns: spec.Named("QueryBuilder")},
+			{Name: "term", Params: []spec.Param{{Name: "term", Type: spec.Any()}}, Returns: spec.Named("QueryBuilder")},
+			{Name: "queryString", Params: []spec.Param{{Name: "query", Type: spec.String()}}, Returns: spec.Named("Query")},
+			{Name: "prefix", Params: []spec.Param{{Name: "prefix", Type: spec.String()}}, Returns: spec.Named("QueryBuilder")},
+			{Name: "fuzzy", Params: []spec.Param{{Name: "term", Type: spec.String()}}, Returns: spec.Named("QueryBuilder")},
+			{Name: "regexp", Params: []spec.Param{{Name: "pattern", Type: spec.String()}}, Returns: spec.Named("QueryBuilder")},
+			{Name: "wildcard", Params: []spec.Param{{Name: "pattern", Type: spec.String()}}, Returns: spec.Named("QueryBuilder")},
+			{Name: "bool", Returns: spec.Named("BoolQueryBuilder")},
+			{Name: "conj", Params: []spec.Param{{Name: "queries", Type: spec.Named("Query"), Variadic: true}}, Returns: spec.Named("Query")},
+			{Name: "conjunction", Params: []spec.Param{{Name: "queries", Type: spec.Named("Query"), Variadic: true}}, Returns: spec.Named("Query")},
+			{Name: "disj", Params: []spec.Param{{Name: "queries", Type: spec.Named("Query"), Variadic: true}}, Returns: spec.Named("Query")},
+			{Name: "disjunction", Params: []spec.Param{{Name: "queries", Type: spec.Named("Query"), Variadic: true}}, Returns: spec.Named("Query")},
+			{Name: "matchAll", Returns: spec.Named("Query")},
+			{Name: "matchNone", Returns: spec.Named("Query")},
+		},
+	}
+}
 
 func (module) Doc() string {
 	return `
