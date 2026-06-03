@@ -1319,7 +1319,7 @@ I also added example scripts and a quickstart document so an implementer can lea
 
 **Inferred user intent:** Finish the roadmap's documentation/discovery phase with runnable examples and testable declarations.
 
-**Commit (code):** pending — "Add TypeScript declarations and examples"
+**Commit (code):** ba142460d2e6182d87fdf659afa38f6a8eb8dfc7 — "Add TypeScript declarations and examples"
 
 ### What I did
 
