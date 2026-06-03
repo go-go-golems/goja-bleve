@@ -56,9 +56,23 @@ The detailed FAISS build instructions live in:
 /home/manuel/workspaces/2026-05-27/rag-evaluation-system/2026-05-27--rag-evaluation-system/docs/howto-compile-faiss-for-bleve-vectors.md
 ```
 
+## xgoja/jsverb validation
+
+The generated `cmd/goja-bleve` binary embeds small JavaScript verb smoke tests. Use these while building each API phase so the module is validated through the same generated xgoja runtime shape that downstream users will exercise.
+
+```bash
+cd cmd/goja-bleve
+GOWORK=off go generate ./...
+./dist/goja-bleve mapping factories --output json
+./dist/goja-bleve mapping build-basic --output json
+./dist/goja-bleve mapping wrong-wrapper-error --output json
+./dist/goja-bleve search bm25 privacy --output json
+```
+
 ## Development validation
 
 ```bash
 go test ./... -count=1
 GOWORK=off go test ./... -count=1
+cd cmd/goja-bleve && GOWORK=off go test ./... -count=1
 ```

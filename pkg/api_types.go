@@ -5,6 +5,7 @@ import (
 
 	bleve "github.com/blevesearch/bleve/v2"
 	"github.com/blevesearch/bleve/v2/mapping"
+	"github.com/blevesearch/bleve/v2/search/query"
 	"github.com/dop251/goja"
 )
 
@@ -40,8 +41,9 @@ type indexRef struct {
 
 type indexBuilderRef struct {
 	refBase
-	mode string
-	path string
+	mode    string
+	path    string
+	mapping *mapping.IndexMappingImpl
 }
 
 type mappingRef struct {
@@ -76,7 +78,7 @@ type fieldBuilderRef struct {
 
 type queryRef struct {
 	refBase
-	query any
+	query query.Query
 }
 
 type searchRequestRef struct {

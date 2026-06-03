@@ -105,6 +105,9 @@ func (m *moduleRuntime) installExports(exports *goja.Object) {
 	m.mustSet(exports, "open", m.openIndexBuilder)
 	m.mustSet(exports, "memory", m.memoryIndexBuilder)
 
+	m.mustSet(exports, "match", m.matchQuery)
+	m.mustSet(exports, "term", m.termQuery)
+	m.mustSet(exports, "queryString", m.queryStringQuery)
 	m.mustSet(exports, "matchAll", m.matchAllQuery)
 	m.mustSet(exports, "matchNone", m.matchNoneQuery)
 }

@@ -726,3 +726,77 @@ Mapping builders are the first real API surface where Go-backed wrappers matter.
   - `cmd/goja-bleve/dist/goja-bleve mapping factories --output json`
   - `cmd/goja-bleve/dist/goja-bleve mapping build-basic --output json`
   - `cmd/goja-bleve/dist/goja-bleve mapping wrong-wrapper-error --output json`
+
+---
+
+## Step 10: Start Phase 3 with in-memory BM25 search and jsverb smoke tests
+
+I continued from the xgoja harness into the first usable search path. JavaScript can now build an in-memory Bleve index from a JS-built mapping, index documents, build a basic search request, and run a BM25 match query. This is still the minimal Phase 3 subset, but it proves the key path: `mapping -> memory index -> index documents -> query -> search request -> search result`.
+
+The same behavior is now covered by both Go integration tests and a generated xgoja jsverb. The jsverb command `goja-bleve search bm25 privacy` returns two hits from a three-document in-memory corpus, so the generated runtime is testing real indexing and search behavior rather than only factory presence.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 9: "use xgoja in goja-bleve, like it's done in goja-text/ to actually stsart testing these functionalities as you build them using jsverb scripts.")
+
+**Assistant interpretation:** Continue implementing features while validating each feature through xgoja/jsverb scripts.
+
+**Inferred user intent:** Build goja-bleve in a way that continuously proves the generated JavaScript runtime path works.
+
+### What I did
+
+- Added Phase 3 index lifecycle basics in `pkg/api_index.go`
+- Added text query factories in `pkg/api_query.go`: `match`, `term`, `queryString`, `matchAll`, and `matchNone`
+- Added search request builder basics in `pkg/api_search.go`: `.query()`, `.size()`, `.from()`, `.fields()`, and `.build()`
+- Added result conversion to plain JS-friendly maps with total, maxScore, took, hits, hit id, score, and fields
+- Added Go integration tests in `pkg/index_search_test.go`
+- Added `cmd/goja-bleve/jsverbs/search.js` with `search bm25`
+- Regenerated the xgoja binary and verified:
+  - `./dist/goja-bleve mapping build-basic --output json`
+  - `./dist/goja-bleve search bm25 privacy --output json`
+- Updated README with xgoja/jsverb validation commands
+- Checked docmgr tasks 20, 21, 22, 23, and 27
+
+### Why
+
+A native module for search is only useful once it can run a complete end-to-end query from JavaScript. The BM25 path is the simplest complete path and gives a stable foundation before batch operations, richer query factories, and vector search.
+
+### What worked
+
+- JavaScript can create a memory index with an explicit mapping
+- JavaScript can index plain objects into Bleve
+- JavaScript can run a match query scoped to a field
+- Search results return usable JS objects
+- The generated xgoja jsverb returned two matching privacy documents from a three-document corpus
+
+### What didn't work
+
+- Root-level `go generate ./cmd/goja-bleve` no longer works after `cmd/goja-bleve` becomes a nested generated module. The working command is `cd cmd/goja-bleve && GOWORK=off go generate ./...`.
+
+### What I learned
+
+- For generated xgoja command directories, regeneration should happen inside the nested module with `GOWORK=off` once generated `go.mod` exists.
+- `commands.jsverbs.mount: root` gives ergonomic commands such as `goja-bleve search bm25 privacy`.
+
+### What was tricky to build
+
+- The index wrapper has to validate built search request refs, not just any search request wrapper. Passing `bleve.search().query(...)` without `.build()` now fails with a clear `search request is not built` error.
+
+### What warrants a second pair of eyes
+
+- Result conversion currently returns a compact subset. Later phases should decide how much of Bleve's locations, fragments, explanations, facets, and score details to expose.
+
+### What should be done in the future
+
+- Finish Phase 3 query factories and search request options: phrase, prefix, fuzzy, regexp, wildcard, bool/conj/disj, sort, highlight, explain.
+- Add jsverb scripts for boolean queries and persistent indexes once those APIs are implemented.
+
+### Code review instructions
+
+- Review `pkg/api_index.go`, `pkg/api_query.go`, and `pkg/api_search.go`
+- Review `pkg/index_search_test.go` and `cmd/goja-bleve/jsverbs/search.js`
+- Validate with `cd cmd/goja-bleve && ./dist/goja-bleve search bm25 privacy --output json`
+
+### Technical details
+
+Successful jsverb output includes two rows with `total: 2`, `docCount: 3`, and ids `chunk-1` and `chunk-3` for the query `privacy`.

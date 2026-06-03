@@ -131,3 +131,15 @@ Implemented Phase 2 mapping builders and added xgoja/jsverb validation harness m
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/mapping_test.go — JS-built mapping integration tests against real Bleve index
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/xgoja/providers/bleve/bleve.go — xgoja provider wrapper
 
+
+## 2026-06-02
+
+Started Phase 3 text-search implementation: memory/create/open index builders, index.index/delete/search/docCount/close, match/term/queryString queries, search request builder basics, and xgoja search bm25 jsverb.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/cmd/goja-bleve/jsverbs/search.js — BM25 jsverb smoke test over in-memory index
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/api_index.go — Index builder and Index wrapper methods
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/api_query.go — Basic text query factories and field/boost methods
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/api_search.go — Search request builder and result conversion
+

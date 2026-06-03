@@ -44,14 +44,14 @@
 
 ### Phase 3: Index lifecycle, document indexing, and BM25 text search
 
-- [ ] Implement index creation APIs: `bleve.create(path, mapping)`, `bleve.open(path)`, and `bleve.memory(mapping)` or the final names chosen in the design document.
-- [ ] Implement `index.close()`, `index.docCount()`, `index.index(id, doc)`, `index.delete(id)`, `index.search(request)`, and `index.batch()`.
-- [ ] Track open indexes in `moduleRuntime` so module shutdown can close resources and so closed index refs reject later operations.
-- [ ] Implement document conversion from JS values to Go maps/struct-compatible values while preserving `[]float32` support for later vector fields.
+- [x] Implement index creation APIs: `bleve.create(path, mapping)`, `bleve.open(path)`, and `bleve.memory(mapping)` or the final names chosen in the design document.
+- [x] Implement `index.close()`, `index.docCount()`, `index.index(id, doc)`, `index.delete(id)`, `index.search(request)`, and `index.batch()`.
+- [x] Track open indexes in `moduleRuntime` so module shutdown can close resources and so closed index refs reject later operations.
+- [x] Implement document conversion from JS values to Go maps/struct-compatible values while preserving `[]float32` support for later vector fields.
 - [ ] Implement text query factories: `match`, `matchPhrase`, `term`, `queryString`, `prefix`, `fuzzy`, `regexp`, `wildcard`, `matchAll`, `matchNone`, `conjunction`, `disjunction`, and boolean query composition.
 - [ ] Implement search request builder methods: `.query(queryRef)`, `.size(n)`, `.from(n)`, `.fields([...])`, `.sort([...])`, `.highlight(...)`, `.explain(boolean)`, and `.build()`.
 - [ ] Implement result conversion: total hits, max score, took, hit id, score, fields, fragments, locations/explanation where available.
-- [ ] Add an end-to-end JS integration test that creates an in-memory text index, indexes documents, runs a match query, and asserts ranked hits.
+- [x] Add an end-to-end JS integration test that creates an in-memory text index, indexes documents, runs a match query, and asserts ranked hits.
 - [ ] Add error-path tests for missing index path, invalid mapping object, invalid document id, and invalid query object.
 
 **Done when:** the module can create/open indexes, index ordinary documents, run BM25 text queries, and return stable JS result objects.
