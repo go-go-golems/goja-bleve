@@ -47,6 +47,95 @@ func TestJSCanCreateVectorFieldAndRunKNN(t *testing.T) {
 	}
 }
 
+func TestJSCanRunHybridRRFFusion(t *testing.T) {
+	vm := newBleveTestVM()
+	indexPath := filepath.Join(t.TempDir(), "idx")
+	value, err := vm.RunString(fmt.Sprintf(`
+		const bleve = require("bleve");
+		const color = bleve.field().text().store(true).includeTermVectors(true).build();
+		const colorvect = bleve.field().vector(3).similarity("l2_norm").optimizedFor("recall").build();
+		const doc = bleve.docMapping()
+			.dynamic(false)
+			.field("color", color)
+			.field("colorvect", colorvect)
+			.build();
+		const mapping = bleve.mapping().defaultMapping(doc).build();
+		const idx = bleve.create(%q).mapping(mapping).build();
+		idx.index("dark blue", { color: "dark blue", colorvect: [0, 0, 139] });
+		idx.index("dark slate blue", { color: "dark slate blue", colorvect: [72, 61, 139] });
+		idx.index("navy", { color: "navy", colorvect: [0, 0, 128] });
+		idx.index("blue", { color: "blue", colorvect: [0, 0, 255] });
+		idx.index("medium blue", { color: "medium blue", colorvect: [0, 0, 205] });
+		idx.index("royal blue", { color: "royal blue", colorvect: [65, 105, 225] });
+		const req = bleve.search()
+			.query(bleve.matchPhrase("dark").field("color"))
+			.knn("colorvect", [0, 0, 129], 5, 1.0)
+			.knn("colorvect", [0, 0, 250], 5, 1.0)
+			.score("rrf")
+			.scoreRankConstant(1)
+			.scoreWindowSize(10)
+			.size(5)
+			.fields(["color"])
+			.explain(true)
+			.build();
+		const result = idx.search(req);
+		idx.close();
+		({ total: result.total, ids: result.hits.map(h => h.id), scores: result.hits.map(h => h.score), hasExplanation: !!result.hits[0].explanation });
+	`, indexPath))
+	if err != nil {
+		t.Fatalf("hybrid RRF script: %v", err)
+	}
+	got := value.Export().(map[string]any)
+	ids := got["ids"].([]any)
+	if len(ids) < 3 {
+		t.Fatalf("expected at least 3 hybrid hits, got %#v", ids)
+	}
+	if ids[0] != "dark blue" {
+		t.Fatalf("first hybrid hit = %#v, want dark blue (ids=%#v)", ids[0], ids)
+	}
+	scores := got["scores"].([]any)
+	if scores[0].(float64) <= scores[1].(float64) {
+		t.Fatalf("expected first fused score to be greater than second, scores=%#v ids=%#v", scores, ids)
+	}
+}
+
+func TestJSCanRunHybridRSFFusion(t *testing.T) {
+	vm := newBleveTestVM()
+	indexPath := filepath.Join(t.TempDir(), "idx")
+	value, err := vm.RunString(fmt.Sprintf(`
+		const bleve = require("bleve");
+		const color = bleve.field().text().store(true).build();
+		const colorvect = bleve.field().vector(3).similarity("l2_norm").optimizedFor("recall").build();
+		const doc = bleve.docMapping().dynamic(false).field("color", color).field("colorvect", colorvect).build();
+		const mapping = bleve.mapping().defaultMapping(doc).build();
+		const idx = bleve.create(%q).mapping(mapping).build();
+		idx.index("dark blue", { color: "dark blue", colorvect: [0, 0, 139] });
+		idx.index("dark slate blue", { color: "dark slate blue", colorvect: [72, 61, 139] });
+		idx.index("navy", { color: "navy", colorvect: [0, 0, 128] });
+		idx.index("blue", { color: "blue", colorvect: [0, 0, 255] });
+		idx.index("medium blue", { color: "medium blue", colorvect: [0, 0, 205] });
+		const req = bleve.search()
+			.query(bleve.matchPhrase("dark").field("color"))
+			.knn("colorvect", [0, 0, 129], 5, 1.0)
+			.score("rsf")
+			.scoreWindowSize(10)
+			.size(5)
+			.fields(["color"])
+			.build();
+		const result = idx.search(req);
+		idx.close();
+		({ total: result.total, ids: result.hits.map(h => h.id), scores: result.hits.map(h => h.score) });
+	`, indexPath))
+	if err != nil {
+		t.Fatalf("hybrid RSF script: %v", err)
+	}
+	got := value.Export().(map[string]any)
+	ids := got["ids"].([]any)
+	if len(ids) < 3 {
+		t.Fatalf("expected at least 3 hybrid hits, got %#v", ids)
+	}
+}
+
 func TestVectorSearchBuilderRejectsInvalidKNNInputs(t *testing.T) {
 	for _, tc := range []struct {
 		name     string

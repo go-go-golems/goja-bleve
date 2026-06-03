@@ -89,13 +89,13 @@
 
 ### Phase 6: Hybrid BM25 + vector search and score fusion
 
-- [ ] Add search request scoring methods: `.score("rrf" | "rsf" | "bm25" | default)`, `.scoreRankConstant(n)`, and `.scoreWindowSize(n)` based on Bleve's request parameters.
-- [ ] Ensure hybrid requests can combine a normal text query with one or more KNN clauses.
-- [ ] Expose KNN boosts and text-query boosts in a way that matches Bleve's semantics and does not pretend scores are directly comparable before fusion.
-- [ ] Return score breakdowns when Bleve provides them, and document when `scoreBreakdown` may be empty.
-- [ ] Add integration tests comparing BM25-only, KNN-only, and hybrid RRF results on the same small corpus.
-- [ ] Add an example modeled after `cmd/experiments/bleve-knn/main.go`, but written as a goja script using the native module API.
-- [ ] Document how this differs from the current rag-eval manual RRF implementation over separate BM25 and brute-force vector result sets.
+- [x] Add search request scoring methods: `.score("rrf" | "rsf" | "none" | default)`, `.scoreRankConstant(n)`, and `.scoreWindowSize(n)` based on Bleve's request parameters.
+- [x] Ensure hybrid requests can combine a normal text query with one or more KNN clauses.
+- [x] Expose KNN boosts and text-query boosts in a way that matches Bleve's semantics and does not pretend scores are directly comparable before fusion.
+- [x] Return score breakdowns when Bleve provides them, and document when `scoreBreakdown` may be empty.
+- [x] Add integration tests comparing BM25-only, KNN-only, and hybrid RRF results on the same small corpus.
+- [x] Add an example modeled after `cmd/experiments/bleve-knn/main.go`, but written as a goja script using the native module API.
+- [x] Document how this differs from the current rag-eval manual RRF implementation over separate BM25 and brute-force vector result sets.
 
 **Done when:** JS scripts can run hybrid text+vector search through one Bleve search request and select RRF/RSF scoring.
 

@@ -22,7 +22,7 @@ const query = bleve.matchAll()
 const request = bleve.search()
 ```
 
-The mapping factories expose terminal `.build()` methods, and search requests can now combine ordinary Bleve queries with KNN clauses when the host binary is built with vector support. Later phases will add hybrid score fusion convenience APIs and TypeScript declarations.
+The mapping factories expose terminal `.build()` methods, and search requests can combine ordinary Bleve queries with KNN clauses when the host binary is built with vector support. Hybrid score fusion is available through Bleve's RRF/RSF scoring modes. Later phases will add TypeScript declarations.
 
 ## Mapping API scope in the current phase
 
@@ -56,9 +56,27 @@ const request = bleve.search()
   .query(bleve.matchNone())
   .knn("embedding", [1, 0, 0, 0], 2, 1.0)
   .build()
+
+const hybrid = bleve.search()
+  .query(bleve.match("privacy").field("text"))
+  .knn("embedding", [1, 0, 0, 0], 10, 1.0)
+  .score("rrf")
+  .scoreRankConstant(60)
+  .scoreWindowSize(50)
+  .build()
 ```
 
 Supported mapping helpers normalize common aliases for cosine, dot product, and L2/euclidean similarity, then let Bleve validate the final mapping. `idx.search()` validates KNN vector length against the index mapping before executing the search so JavaScript callers get a clear dimension mismatch error.
+
+Hybrid score fusion uses Bleve's request-level scoring options:
+
+- `.score("rrf")` for Reciprocal Rank Fusion
+- `.score("rsf")` for Relative Score Fusion
+- `.score("none")` or `.score("default")` for non-fusion modes
+- `.scoreRankConstant(n)` for RRF's rank constant
+- `.scoreWindowSize(n)` for the fusion window, which must be at least the request size
+
+This differs from the current RAG evaluation service in `2026-05-27--rag-evaluation-system/internal/services/search/hybrid.go`. That service runs BM25 and vector retrieval as two separate service calls, merges candidates by `ChunkID`, and computes manual RRF scores with `1/(rrfK + rank)`. `goja-bleve` instead builds one Bleve `SearchRequest` containing both the text query and one or more KNN clauses, then lets Bleve perform RRF/RSF rescoring inside the search engine. The native Bleve path keeps text, vector, pagination/windowing, KNN boosts, and score-fusion parameters in one request object; the manual rag-eval path still exposes component ranks/scores explicitly through `RetrievalResult.Components`.
 
 Bleve vector search requires the host Go binary to be compiled with:
 
@@ -103,6 +121,7 @@ GOWORK=off CGO_LDFLAGS="-L/usr/local/lib -lfaiss_c -lfaiss -lstdc++ -lm" \
   --keep-work \
   --xgoja-version v0.7.4
 ./dist/goja-bleve-vectors vector knn --output json
+./dist/goja-bleve-vectors vector hybrid --output json
 ```
 
 ## Development validation

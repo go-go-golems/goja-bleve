@@ -178,3 +178,13 @@ Step 13: Implemented Phase 5 vector field mappings and KNN search with build-tag
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/vector_api_vectors.go — Vector support implementation
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/vector_knn_test.go — Vector validation coverage
 
+
+## 2026-06-03
+
+Step 14: Implemented Phase 6 hybrid score fusion with RRF/RSF builder methods, tests, README comparison, and xgoja hybrid jsverb
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/cmd/goja-bleve/jsverbs/vector.js — Hybrid jsverb validation
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/api_search.go — Score fusion builder implementation
+

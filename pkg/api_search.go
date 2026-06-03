@@ -20,6 +20,9 @@ func (m *moduleRuntime) searchRequestBuilder() *goja.Object {
 	var highlightFields []string
 	var highlightStyle string
 	var explain bool
+	var score string
+	var scoreRankConstant int
+	var scoreWindowSize int
 	var knnClauses []*knnRef
 	var knnOperator string
 
@@ -65,6 +68,36 @@ func (m *moduleRuntime) searchRequestBuilder() *goja.Object {
 	m.mustSet(obj, "explain", func(enabled bool) *goja.Object {
 		explain = enabled
 		return obj
+	})
+	m.mustSet(obj, "score", func(value string) (*goja.Object, error) {
+		normalized := strings.TrimSpace(strings.ToLower(value))
+		switch normalized {
+		case "", "default":
+			score = bleve.ScoreDefault
+		case "none":
+			score = bleve.ScoreNone
+		case "rrf":
+			score = bleve.ScoreRRF
+		case "rsf":
+			score = bleve.ScoreRSF
+		default:
+			return nil, fmt.Errorf("bleve: search score must be one of default, none, rrf, or rsf")
+		}
+		return obj, nil
+	})
+	m.mustSet(obj, "scoreRankConstant", func(value int) (*goja.Object, error) {
+		if value <= 0 {
+			return nil, fmt.Errorf("bleve: score rank constant must be positive")
+		}
+		scoreRankConstant = value
+		return obj, nil
+	})
+	m.mustSet(obj, "scoreWindowSize", func(value int) (*goja.Object, error) {
+		if value <= 0 {
+			return nil, fmt.Errorf("bleve: score window size must be positive")
+		}
+		scoreWindowSize = value
+		return obj, nil
 	})
 	m.mustSet(obj, "knnOperator", func(operator string) (*goja.Object, error) {
 		normalized := strings.TrimSpace(strings.ToLower(operator))
@@ -114,6 +147,21 @@ func (m *moduleRuntime) searchRequestBuilder() *goja.Object {
 		}
 		if len(sort) > 0 {
 			request.SortBy(sort)
+		}
+		if score != "" {
+			request.Score = score
+		}
+		if scoreRankConstant > 0 || scoreWindowSize > 0 {
+			request.Params = bleve.NewDefaultParams(request.From, request.Size)
+			if scoreRankConstant > 0 {
+				request.Params.ScoreRankConstant = scoreRankConstant
+			}
+			if scoreWindowSize > 0 {
+				request.Params.ScoreWindowSize = scoreWindowSize
+			}
+			if err := request.Params.Validate(request.Size); err != nil {
+				return nil, fmt.Errorf("bleve: invalid score params: %w", err)
+			}
 		}
 		if len(highlightFields) > 0 || highlightStyle != "" {
 			if highlightStyle != "" {

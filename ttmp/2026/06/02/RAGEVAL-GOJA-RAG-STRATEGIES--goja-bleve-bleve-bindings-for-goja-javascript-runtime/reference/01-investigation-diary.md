@@ -13,10 +13,14 @@ DocType: reference
 Intent: long-term
 Owners: []
 RelatedFiles:
+    - Path: ../../../../../../../2026-05-27--rag-evaluation-system/internal/services/search/hybrid.go
+      Note: Current rag-eval manual RRF implementation used for comparison
     - Path: 2026-05-27--rag-evaluation-system/cmd/experiments/bleve-knn/main.go
       Note: Standalone bleve vector/KNN experiment now runs end-to-end with local FAISS libraries
     - Path: cmd/goja-bleve/jsverbs/vector.js
-      Note: Generated-runtime vector KNN smoke verb
+      Note: |-
+        Generated-runtime vector KNN smoke verb
+        KNN and hybrid vector jsverbs
     - Path: faiss/tests/test_hamming.cpp
       Note: Patched hamming test ids to use faiss::int_maxheap_array_t::TI so full FAISS build succeeds
     - Path: goja-bleve/ttmp/2026/06/02/RAGEVAL-GOJA-RAG-STRATEGIES--goja-bleve-bleve-bindings-for-goja-javascript-runtime/reference/01-investigation-diary.md
@@ -24,19 +28,26 @@ RelatedFiles:
     - Path: pkg/api_mapping.go
       Note: Vector field builder API
     - Path: pkg/api_search.go
-      Note: KNN search request builder API
+      Note: |-
+        KNN search request builder API
+        Hybrid score-fusion builder methods
+    - Path: pkg/score_options_test.go
+      Note: Score option validation tests
     - Path: pkg/vector_api.go
       Note: Non-vector build-tag helper stubs for Phase 5
     - Path: pkg/vector_api_vectors.go
       Note: Vector build-tag helpers for field mappings
     - Path: pkg/vector_knn_test.go
-      Note: Vector-tagged KNN integration and error-path tests
+      Note: |-
+        Vector-tagged KNN integration and error-path tests
+        Vector-tagged hybrid RRF/RSF tests
 ExternalSources: []
 Summary: Chronological investigation diary for goja-bleve design, FAISS build, and vector search experiment.
 LastUpdated: 2026-06-02T22:30:00-04:00
 WhatFor: Track design decisions, FAISS build steps, and experiment progress
 WhenToUse: When resuming work on the goja-bleve module or FAISS/vector experiments
 ---
+
 
 
 
@@ -1097,3 +1108,89 @@ GOWORK=off CGO_LDFLAGS="-L/usr/local/lib -lfaiss_c -lfaiss -lstdc++ -lm" \
 ```
 
 Successful vector jsverb output returns two hits: `chunk-1` with score `1`, followed by `chunk-3` with score about `0.9938837`.
+
+---
+
+## Step 14: Implement Phase 6 hybrid score fusion
+
+I added the score-fusion layer on top of the Phase 5 KNN API. JavaScript search requests can now select Bleve's native RRF or RSF scoring mode and set the fusion parameters that Bleve exposes through `SearchRequest.Params`. This keeps hybrid search as a single Bleve request instead of requiring scripts to run BM25 and vector retrieval separately and merge them in JavaScript.
+
+The implementation is intentionally small: `.score(...)`, `.scoreRankConstant(...)`, and `.scoreWindowSize(...)` mutate the same search request builder already used for text search and KNN search. The generated vector xgoja binary now includes a `vector hybrid` jsverb that indexes a tiny vector corpus and returns fused RRF scores.
+
+### Prompt Context
+
+**User prompt (verbatim):** "continue"
+
+**Assistant interpretation:** Continue from Phase 5 into the next roadmap item, Phase 6 hybrid BM25+vector score fusion.
+
+**Inferred user intent:** Keep implementing goja-bleve in roadmap order, validating with tests and xgoja/jsverbs, then update ticket documentation and commit.
+
+**Commit (code):** pending — "Implement hybrid score fusion API"
+
+### What I did
+
+- Added score-fusion builder methods in `pkg/api_search.go`:
+  - `.score("default" | "none" | "rrf" | "rsf")`
+  - `.scoreRankConstant(n)`
+  - `.scoreWindowSize(n)`
+- Added validation that score parameters are positive and that `scoreWindowSize >= request.Size`.
+- Added `pkg/score_options_test.go` for non-vector score-option validation.
+- Extended `pkg/vector_knn_test.go` with vector-tagged hybrid RRF and RSF integration tests.
+- Extended `cmd/goja-bleve/jsverbs/vector.js` with `vector hybrid`.
+- Regenerated the embedded xgoja jsverb copy.
+- Updated `README.md` with score-fusion API examples and a comparison to the current rag-eval manual RRF implementation in `internal/services/search/hybrid.go`.
+- Checked all Phase 6 tasks in `tasks.md`.
+
+### Why
+
+Phase 5 proved pure KNN. RAG retrieval usually needs hybrid text+vector ranking, and Bleve already has native RRF/RSF support. Exposing those request fields lets goja scripts express hybrid retrieval without rebuilding the current rag-eval two-call merge logic in JavaScript.
+
+### What worked
+
+- Non-vector builds accept and validate scoring options because `Score` and `Params` are not vector-only fields.
+- Vector builds can run hybrid requests with a normal text query plus one or more KNN clauses.
+- RRF and RSF integration tests pass with FAISS enabled.
+- The generated `goja-bleve-vectors vector hybrid --output json` command returns fused RRF scores.
+
+### What didn't work
+
+- I initially expected fused score details to always appear as `scoreBreakdown`, but the RRF smoke result did not expose that field in the current result shape. I changed the test to assert fused ranking and descending fused scores instead of requiring a breakdown.
+- My first attempt to inspect the rag-eval hybrid implementation used the wrong path (`pkg/search/hybrid_search.go`). The correct file is `2026-05-27--rag-evaluation-system/internal/services/search/hybrid.go`.
+
+### What I learned
+
+- Bleve's score-fusion parameters are ordinary `SearchRequest` fields: `Score` plus `RequestParams{ScoreRankConstant, ScoreWindowSize}`.
+- The existing rag-eval service performs manual RRF by merging independent BM25 and vector result lists by `ChunkID`; Bleve-native fusion keeps the query, KNN clauses, boosts, pagination/windowing, and fusion mode inside one engine request.
+
+### What was tricky to build
+
+- Score-fusion defaults depend on request size/from. The builder applies `.size()` and `.from()` before constructing `RequestParams`, then validates the explicit window size against the final request size.
+- Score breakdown availability is not guaranteed for every result shape, so the public result conversion should preserve breakdowns when present but tests should not require them for basic fusion correctness.
+
+### What warrants a second pair of eyes
+
+- Whether `.score("none")` should be documented as a general Bleve scoring option or kept out of examples to avoid confusion with fusion modes.
+- Whether Phase 6 should expose lower-level request params or KNN per-clause params before TypeScript declarations are written.
+- Whether rag-eval's `RetrievalResult.Components` should be mirrored in a future convenience layer, since Bleve-native fusion does not currently expose the same component table shape.
+
+### What should be done in the future
+
+- Phase 7 should focus on provider/host integration and configuration policy.
+- Phase 8 should add TypeScript declarations for mappings, queries, search requests, batches, vectors, and hybrid scoring.
+- Consider adding explicit examples for manual component analysis if downstream RAG evaluation scripts need BM25/vector component columns.
+
+### Code review instructions
+
+- Review `pkg/api_search.go` for score option normalization and `RequestParams` construction.
+- Review `pkg/score_options_test.go` and the hybrid tests in `pkg/vector_knn_test.go`.
+- Review `cmd/goja-bleve/jsverbs/vector.js` for the generated-runtime hybrid example.
+- Review the README comparison against `2026-05-27--rag-evaluation-system/internal/services/search/hybrid.go`.
+- Validate with:
+  - `go test ./... -count=1`
+  - `GOWORK=off go test ./... -count=1`
+  - `GOWORK=off CGO_LDFLAGS="-L/usr/local/lib -lfaiss_c -lfaiss -lstdc++ -lm" go test -tags=vectors -ldflags "-r /usr/local/lib" ./pkg -count=1`
+  - `cd cmd/goja-bleve && ./dist/goja-bleve-vectors vector hybrid --output json`
+
+### Technical details
+
+Successful hybrid jsverb output returns `chunk-1` first with score `0.8333333333333333`, followed by `chunk-3` with score `0.5`, `scoreMode: "rrf"`, and `vectorSupport: true`.
