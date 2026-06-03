@@ -20,7 +20,7 @@
 - [x] Implement the hidden-reference helper pattern based on geppetto: `attachRef(value, ref)` and `getRef[T](value, expectedType)` using a non-enumerable `__bleve_ref` property.
 - [x] Define Go-backed reference structs for each JS wrapper: `indexRef`, `mappingRef`, `docMappingRef`, `fieldMappingRef`, `queryRef`, `searchRequestRef`, `batchRef`, `knnRef`, and result wrappers where needed.
 - [ ] Define consistent error behavior for wrong wrapper types, missing refs, closed indexes, double-close, and attempts to reuse batches after execution.
-- [ ] Add tests that pass the wrong JS objects into builder methods and verify that errors are clear and type-specific rather than panics.
+- [x] Add tests that pass the wrong JS objects into builder methods and verify that errors are clear and type-specific rather than panics.
 - [x] Add tests that prove wrapper objects do not expose implementation refs during normal JS enumeration or JSON serialization.
 
 **Done when:** every public builder method accepts only valid wrapper objects, rejects invalid values with useful errors, and preserves type safety through Go refs rather than dynamic JS maps.
@@ -29,14 +29,14 @@
 
 ### Phase 2: Mapping builder API
 
-- [ ] Implement `bleve.mapping()` / `bleve.indexMapping()` builder entrypoint with `.defaultMapping()`, `.typeField()`, `.defaultAnalyzer()`, `.storeDynamic()`, `.indexDynamic()`, and `.build()` methods.
-- [ ] Implement `bleve.documentMapping()` builder with `.field(name, fieldBuilderOrFieldRef)`, `.dynamic(boolean)`, `.enabled(boolean)`, `.properties(object)`, and `.build()`.
-- [ ] Implement field builders for text, keyword, numeric, datetime, boolean, geospatial, composite, and disabled fields where supported by Bleve.
-- [ ] Implement field options: `.store()`, `.index()`, `.includeTermVectors()`, `.includeInAll()`, `.analyzer()`, `.dateFormat()`, `.docValues()`, and equivalent Bleve field-mapping settings.
-- [ ] Ensure builder `.build()` returns a Go-backed mapping wrapper and not a plain JS object.
-- [ ] Add tests that create explicit mappings, index documents, and verify expected behavior for text versus keyword fields.
-- [ ] Add tests that verify dynamic mapping behavior: unmapped fields included/excluded according to mapping settings.
-- [ ] Document which Bleve mapping options are intentionally not exposed in v1 and why.
+- [x] Implement `bleve.mapping()` / `bleve.indexMapping()` builder entrypoint with `.defaultMapping()`, `.typeField()`, `.defaultAnalyzer()`, `.storeDynamic()`, `.indexDynamic()`, and `.build()` methods.
+- [x] Implement `bleve.documentMapping()` builder with `.field(name, fieldBuilderOrFieldRef)`, `.dynamic(boolean)`, `.enabled(boolean)`, `.properties(object)`, and `.build()`.
+- [x] Implement field builders for text, keyword, numeric, datetime, boolean, geospatial, composite, and disabled fields where supported by Bleve.
+- [x] Implement field options: `.store()`, `.index()`, `.includeTermVectors()`, `.includeInAll()`, `.analyzer()`, `.dateFormat()`, `.docValues()`, and equivalent Bleve field-mapping settings.
+- [x] Ensure builder `.build()` returns a Go-backed mapping wrapper and not a plain JS object.
+- [x] Add tests that create explicit mappings, index documents, and verify expected behavior for text versus keyword fields.
+- [x] Add tests that verify dynamic mapping behavior: unmapped fields included/excluded according to mapping settings.
+- [x] Document which Bleve mapping options are intentionally not exposed in v1 and why.
 
 **Done when:** a JS script can define an explicit Bleve index mapping with multiple field types and use that mapping to create a working index.
 

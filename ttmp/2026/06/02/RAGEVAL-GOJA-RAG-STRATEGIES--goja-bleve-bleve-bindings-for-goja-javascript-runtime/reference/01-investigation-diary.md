@@ -632,3 +632,97 @@ The module needs a stable object/reference model before concrete builders are im
 - `require("bleve")` exports: `version`, `vectorSupport`, `mapping`, `indexMapping`, `docMapping`, `documentMapping`, `field`, `search`, `searchRequest`, `create`, `open`, `memory`, `matchAll`, and `matchNone`
 - Vector support flag is compiled from `pkg/vector_support.go` and `pkg/vector_support_vectors.go`
 - Hidden ref key: `__bleve_ref`
+
+---
+
+## Step 9: Implement Phase 2 mapping builders and add xgoja/jsverb validation
+
+I continued Phase 2 by implementing concrete mapping builders and then pivoted the validation harness to xgoja/jsverbs, following the pattern used in `goja-text`. The result is that mapping functionality is now exercised in two ways: Go integration tests that extract the Go-backed mapping refs and create a real Bleve index, and generated xgoja commands that run JavaScript verbs against the module as a user would.
+
+This step also uncovered an xgoja generation detail: when `go tool xgoja` is built from a local checkout, it may not infer a valid released go-go-goja version and can generate `v0.0.0` in the nested build module. I fixed that by making the generator command run `github.com/go-go-golems/go-go-goja/cmd/xgoja@v0.7.4` under `GOWORK=off` and by pinning `--xgoja-version v0.7.4`.
+
+### Prompt Context
+
+**User prompt (verbatim):** "commit at appropriate intervals, keep a diary as you work. continue phase 2"
+
+**Assistant interpretation:** Commit the completed scaffold, continue Phase 2 mapping implementation, and keep the ticket diary up to date.
+
+**Inferred user intent:** Move through the implementation roadmap in reviewable increments while preserving a clear work log.
+
+**Commit (code):** d79a8525ffebbbfb571db0147d5b9e2c6e78fd64 — "Implement goja-bleve module scaffold"
+
+### Prompt Context
+
+**User prompt (verbatim):** "use xgoja in goja-bleve, like it's done in goja-text/ to actually stsart testing these functionalities as you build them using jsverb scripts."
+
+**Assistant interpretation:** Add an xgoja provider and generated command setup to goja-bleve, then write jsverb scripts that validate the module from JavaScript.
+
+**Inferred user intent:** Avoid relying only on Go tests; validate the actual command/runtime path that users and future RAG scripts will use.
+
+### What I did
+
+- Committed Phase 0/1 scaffold as `d79a8525ffebbbfb571db0147d5b9e2c6e78fd64`
+- Implemented Phase 2 mapping builders in `pkg/api_mapping.go`
+- Changed mapping refs in `pkg/api_types.go` to carry concrete Bleve mapping types
+- Added `pkg/mapping_test.go` with JS integration tests that build a mapping and create a real Bleve in-memory index from the Go-backed mapping ref
+- Added `pkg/xgoja/providers/bleve/bleve.go` following the `goja-text/pkg/xgoja/providers/text` pattern
+- Added generated-command scaffold under `cmd/goja-bleve/`
+- Added bundled jsverb script `cmd/goja-bleve/jsverbs/mapping.js`
+- Generated the xgoja binary with `go generate ./cmd/goja-bleve`
+- Ran jsverb smoke commands:
+  - `./dist/goja-bleve mapping factories --output json`
+  - `./dist/goja-bleve mapping build-basic --output json`
+  - `./dist/goja-bleve mapping wrong-wrapper-error --output json`
+
+### Why
+
+Mapping builders are the first real API surface where Go-backed wrappers matter. xgoja/jsverb validation proves that the API is usable from JavaScript in the generated runtime, not only through direct Go unit tests.
+
+### What worked
+
+- JS can build text, keyword, and number field mappings
+- JS can compose a document mapping and an index mapping
+- Go tests can create a real Bleve index from the JS-built mapping and verify dynamic field behavior
+- Generated xgoja CLI exposes `mapping` jsverb commands at the root
+- `wrong-wrapper-error` returns a clear typed-wrapper error instead of panicking
+
+### What didn't work
+
+- First xgoja generation failed with `unknown revision v0.0.0` for `github.com/go-go-golems/go-go-goja`
+- Running generation under nested `GOWORK=off` with `go tool xgoja` failed because the generated module could not see the root module's tool declaration
+- Final fix: use `env GOWORK=off go run github.com/go-go-golems/go-go-goja/cmd/xgoja@v0.7.4 build ... --xgoja-version v0.7.4`
+
+### What I learned
+
+- xgoja generated command workspaces are nested Go modules, so workspace mode and tool declarations need careful handling
+- `commands.jsverbs.mount: root` means verbs are mounted directly as commands like `goja-bleve mapping build-basic`, not under a `verbs` parent command
+
+### What was tricky to build
+
+- The generated xgoja workspace conflicted with the parent `go.work` when built inside `cmd/goja-bleve`; using a versioned `go run` command with `GOWORK=off` made the generator and nested build independent of workspace membership.
+
+### What warrants a second pair of eyes
+
+- Whether generated files under `cmd/goja-bleve` should all be committed, matching `goja-text`, or whether only `xgoja.yaml`, `generate.go`, and jsverbs should be tracked with generated `main.go` rebuilt in CI.
+
+### What should be done in the future
+
+- Use jsverb scripts for each new API phase: text indexing/search, batch indexing, vector KNN, and hybrid RRF.
+- Add Makefile targets for xgoja generation and jsverb smoke checks.
+
+### Code review instructions
+
+- Review `pkg/api_mapping.go` for builder chaining and Bleve mapping mutation
+- Review `pkg/mapping_test.go` for Go-side validation of JS-built mappings
+- Review `pkg/xgoja/providers/bleve/bleve.go` and `cmd/goja-bleve/xgoja.yaml` for the xgoja provider setup
+- Validate with:
+  - `go test ./... -count=1`
+  - `GOWORK=off go test ./... -count=1`
+  - `cd cmd/goja-bleve && ./dist/goja-bleve mapping build-basic --output json`
+
+### Technical details
+
+- Generated CLI command examples:
+  - `cmd/goja-bleve/dist/goja-bleve mapping factories --output json`
+  - `cmd/goja-bleve/dist/goja-bleve mapping build-basic --output json`
+  - `cmd/goja-bleve/dist/goja-bleve mapping wrong-wrapper-error --output json`

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	bleve "github.com/blevesearch/bleve/v2"
+	"github.com/blevesearch/bleve/v2/mapping"
 	"github.com/dop251/goja"
 )
 
@@ -45,30 +46,32 @@ type indexBuilderRef struct {
 
 type mappingRef struct {
 	refBase
-	mapping any
+	mapping *mapping.IndexMappingImpl
 }
 
 type mappingBuilderRef struct {
 	refBase
+	mapping *mapping.IndexMappingImpl
 }
 
 type docMappingRef struct {
 	refBase
-	mapping any
+	mapping *mapping.DocumentMapping
 }
 
 type docMappingBuilderRef struct {
 	refBase
+	mapping *mapping.DocumentMapping
 }
 
 type fieldMappingRef struct {
 	refBase
-	mapping any
+	mapping *mapping.FieldMapping
 }
 
 type fieldBuilderRef struct {
 	refBase
-	fieldType string
+	mapping *mapping.FieldMapping
 }
 
 type queryRef struct {

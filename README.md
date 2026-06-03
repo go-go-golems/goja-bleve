@@ -23,7 +23,18 @@ const query = bleve.matchAll()
 const request = bleve.search()
 ```
 
-The factories currently return Go-backed wrapper objects. Later phases will add terminal `.build()` methods, index lifecycle operations, query execution, KNN search, hybrid score fusion, provider integration, and TypeScript declarations.
+The mapping factories now expose terminal `.build()` methods. Later phases will add index lifecycle operations, query execution, KNN search, hybrid score fusion, provider integration, and TypeScript declarations.
+
+## Mapping API scope in the current phase
+
+Phase 2 exposes the core mapping surface needed for text-first indexes:
+
+- index mappings: `bleve.mapping()` / `bleve.indexMapping()`
+- document mappings: `bleve.docMapping()` / `bleve.documentMapping()`
+- field mappings: `text`, `keyword`, `number`, `datetime`, `boolean`, `geoPoint`, `geoShape`, `ip`, and `disabled`
+- common field options: `name`, `analyzer`, `store`, `index`, `docValues`, `includeTermVectors`, `includeInAll`, and `dateFormat`
+
+The first implementation intentionally does not expose custom analyzers, custom token filters, custom tokenizers, custom date parsers, synonym sources, scoring-model configuration, or vector field options. Custom analysis is a larger Bleve registry concern and needs its own validation/error model. Vector mappings are deferred to the vector/KNN phase because they require `-tags=vectors` and FAISS setup.
 
 ## Vector / KNN support
 

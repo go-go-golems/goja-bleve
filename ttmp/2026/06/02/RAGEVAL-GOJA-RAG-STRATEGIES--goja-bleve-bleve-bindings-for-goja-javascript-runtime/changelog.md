@@ -108,3 +108,26 @@ Recorded Step 8 diary entry for Phase 0/1 scaffold implementation and validation
 
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/ttmp/2026/06/02/RAGEVAL-GOJA-RAG-STRATEGIES--goja-bleve-bleve-bindings-for-goja-javascript-runtime/reference/01-investigation-diary.md — Step 8 implementation diary
 
+
+## 2026-06-02
+
+Implemented Phase 2 mapping builder API: index/document/field builders, field options, wrong-wrapper errors, and JS-to-real-Bleve mapping integration tests.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/api_mapping.go — Chainable mapping/document/field builders with build() terminal refs
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/api_types.go — Typed mapping refs now carry concrete Bleve mapping types
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/mapping_test.go — Mapping builder integration and wrong-wrapper tests
+
+
+## 2026-06-02
+
+Implemented Phase 2 mapping builders and added xgoja/jsverb validation harness modeled after goja-text.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/cmd/goja-bleve/jsverbs/mapping.js — Bundled mapping jsverb smoke tests
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/api_mapping.go — Phase 2 mapping/document/field builder implementation
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/mapping_test.go — JS-built mapping integration tests against real Bleve index
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/xgoja/providers/bleve/bleve.go — xgoja provider wrapper
+
