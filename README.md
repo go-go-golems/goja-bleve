@@ -132,6 +132,16 @@ There is currently no provider-level configuration schema. Path policy is delibe
 
 RAG evaluation scripts can load `bleve` alongside other runtime modules such as `fs`, database modules, `geppetto`, and `goja-text`. Use `fs`/database modules to read source chunks, construct explicit `bleve.mapping()` definitions, batch-index chunks through `idx.newBatch()`, and run BM25/KNN/hybrid requests through one `idx.search(req)` call.
 
+## Examples and TypeScript declarations
+
+- Quickstart: `docs/quickstart.md`
+- Text search: `examples/text-search.js`
+- Batch indexing: `examples/batch-indexing.js`
+- Pure vector KNN: `examples/vector-knn.js`
+- Hybrid RRF: `examples/hybrid-rrf.js`
+
+The module implements `modules.TypeScriptDeclarer`. A declaration snapshot is tested in `pkg/testdata/bleve.d.ts.golden`; update it whenever the public JS API changes.
+
 ## xgoja/jsverb validation
 
 The generated `cmd/goja-bleve` binary embeds small JavaScript verb smoke tests. Use these while building each API phase so the module is validated through the same generated xgoja runtime shape that downstream users will exercise.

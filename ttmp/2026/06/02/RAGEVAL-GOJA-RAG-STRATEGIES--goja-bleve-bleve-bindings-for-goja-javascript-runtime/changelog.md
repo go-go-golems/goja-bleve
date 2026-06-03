@@ -198,3 +198,13 @@ Step 15: Completed Phase 7 provider/host integration with TypeScript descriptor,
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/module.go — TypeScript descriptor and init registration
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/provider_test.go — Provider integration validation
 
+
+## 2026-06-03
+
+Step 16: Completed Phase 8 TypeScript declarations, golden snapshot tests, quickstart, and runnable examples
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/docs/quickstart.md — Quickstart documentation
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/testdata/bleve.d.ts.golden — Declaration snapshot
+

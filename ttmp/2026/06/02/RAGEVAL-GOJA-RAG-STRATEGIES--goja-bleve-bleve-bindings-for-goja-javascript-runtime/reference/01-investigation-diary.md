@@ -21,6 +21,12 @@ RelatedFiles:
       Note: |-
         Generated-runtime vector KNN smoke verb
         KNN and hybrid vector jsverbs
+    - Path: docs/quickstart.md
+      Note: Quickstart and vector setup documentation
+    - Path: examples/hybrid-rrf.js
+      Note: Hybrid RRF example
+    - Path: examples/text-search.js
+      Note: Text-search example
     - Path: faiss/tests/test_hamming.cpp
       Note: Patched hamming test ids to use faiss::int_maxheap_array_t::TI so full FAISS build succeeds
     - Path: goja-bleve/ttmp/2026/06/02/RAGEVAL-GOJA-RAG-STRATEGIES--goja-bleve-bleve-bindings-for-goja-javascript-runtime/reference/01-investigation-diary.md
@@ -32,13 +38,19 @@ RelatedFiles:
         KNN search request builder API
         Hybrid score-fusion builder methods
     - Path: pkg/module.go
-      Note: Native module registration and TypeScript descriptor
+      Note: |-
+        Native module registration and TypeScript descriptor
+        Fuller TypeScript declaration descriptor
     - Path: pkg/provider.go
       Note: Direct provider registration helper
     - Path: pkg/provider_test.go
       Note: Provider and TypeScript discovery tests
     - Path: pkg/score_options_test.go
       Note: Score option validation tests
+    - Path: pkg/testdata/bleve.d.ts.golden
+      Note: Golden TypeScript declaration snapshot
+    - Path: pkg/typescript_test.go
+      Note: Declaration snapshot tests
     - Path: pkg/vector_api.go
       Note: Non-vector build-tag helper stubs for Phase 5
     - Path: pkg/vector_api_vectors.go
@@ -57,6 +69,7 @@ LastUpdated: 2026-06-02T22:30:00-04:00
 WhatFor: Track design decisions, FAISS build steps, and experiment progress
 WhenToUse: When resuming work on the goja-bleve module or FAISS/vector experiments
 ---
+
 
 
 
@@ -1289,3 +1302,96 @@ Provider integration is the boundary between the native module and host applicat
 ### Technical details
 
 The provider package id remains `goja-bleve`; the JavaScript module name remains `bleve`; xgoja specs should mount it with `package: goja-bleve`, `name: bleve`, and `as: bleve`.
+
+---
+
+## Step 16: Complete Phase 8 TypeScript declarations and examples
+
+I expanded the TypeScript declaration surface from the minimal provider-discovery descriptor into a public API snapshot that covers mappings, document mappings, field builders, queries, search requests, indexes, batches, vector KNN, hybrid score fusion, and result shapes. The declaration output is now rendered through the shared go-go-goja `tsgen/render` package and compared against a committed golden file.
+
+I also added example scripts and a quickstart document so an implementer can learn the API without reading the Go wrapper source. The examples cover text search, batch indexing, pure KNN, and hybrid RRF, and I validated them through the generated xgoja runtime.
+
+### Prompt Context
+
+**User prompt (verbatim):** "continue"
+
+**Assistant interpretation:** Continue from Phase 7 into Phase 8 TypeScript declarations, examples, quickstart, vector setup notes, and declaration golden tests.
+
+**Inferred user intent:** Finish the roadmap's documentation/discovery phase with runnable examples and testable declarations.
+
+**Commit (code):** pending — "Add TypeScript declarations and examples"
+
+### What I did
+
+- Expanded `module{}.TypeScriptModule()` in `pkg/module.go` with fuller declarations for:
+  - mappings and mapping builders,
+  - document mappings,
+  - field builders including vector options,
+  - query and boolean query APIs,
+  - search request builder options including KNN and RRF/RSF scoring,
+  - indexes, batches, search results, and search hits.
+- Added `pkg/testdata/bleve.d.ts.golden` as a declaration snapshot.
+- Added `pkg/typescript_test.go` to render the descriptor and compare it to the golden file.
+- Added runnable examples:
+  - `examples/text-search.js`
+  - `examples/batch-indexing.js`
+  - `examples/vector-knn.js`
+  - `examples/hybrid-rrf.js`
+- Added `docs/quickstart.md` with text search, batch indexing, vector KNN, hybrid RRF, and FAISS setup notes.
+- Updated `README.md` to point to the quickstart, examples, and declaration snapshot.
+- Checked all Phase 8 tasks in `tasks.md`.
+
+### Why
+
+At this point the implementation has enough API surface that users need declarations and examples to use it safely. The golden declaration test also creates a review gate: future public API changes must update a visible `.d.ts` snapshot instead of silently drifting.
+
+### What worked
+
+- The TypeScript descriptor renders deterministically through `tsgen/render`.
+- The golden snapshot test passes.
+- Non-vector examples run through `./dist/goja-bleve run`.
+- Vector examples run through `./dist/goja-bleve-vectors run` with the already built FAISS-enabled xgoja binary.
+- Full non-vector, workspace-off, vector/FAISS, generated command, jsverb, and example validations passed.
+
+### What didn't work
+
+- My first attempt to render the descriptor used a nonexistent helper (`NewTypeScriptModuleForTest`). I switched to resolving the registered module through `modules.GetModule("bleve")` for the one-off render command, then wrote tests directly against `module{}.TypeScriptModule()`.
+- The `run` command does not support `--output`; example validation captures stdout without an output-format flag.
+
+### What I learned
+
+- The shared declaration renderer sorts functions alphabetically and appends `RawDTS` lines after exported functions, so the golden snapshot should be treated as renderer output rather than hand-formatted declaration prose.
+- Some fluent builder wrappers return already-built Go-backed references rather than exposing a `.build()` on queries. The declarations model `Query` as the returned wrapper with fluent `.field()` and `.boost()` methods.
+
+### What was tricky to build
+
+- The TypeScript API needs to be precise enough for discovery without pretending to model every runtime invariant. For example, vector methods are declared because they are part of the JS API, but non-vector hosts still throw runtime errors if used without `-tags=vectors`.
+- The examples need to work in both generated command contexts: non-vector examples can run with `goja-bleve`, while vector examples require `goja-bleve-vectors`.
+
+### What warrants a second pair of eyes
+
+- Whether the TypeScript aliases for vector similarity and optimization are too permissive because they include `string` to allow Bleve-supported future values.
+- Whether `Query` should be split into fieldable/boostable subtypes once TypeScript support becomes stricter.
+- Whether the declaration snapshot should be generated by a repo script rather than the manual one-off render command used to create the initial golden file.
+
+### What should be done in the future
+
+- Phase 9 should add hardening/performance tests and CI policy.
+- Add a Makefile target to regenerate `pkg/testdata/bleve.d.ts.golden`.
+- Consider running examples as part of CI when vector/FAISS dependencies are available.
+
+### Code review instructions
+
+- Review `pkg/module.go` for declaration completeness against public exports.
+- Review `pkg/testdata/bleve.d.ts.golden` and `pkg/typescript_test.go` for snapshot expectations.
+- Review `docs/quickstart.md` and `examples/*.js` for user-facing correctness.
+- Validate with:
+  - `go test ./... -count=1`
+  - `GOWORK=off go test ./... -count=1`
+  - `GOWORK=off CGO_LDFLAGS="-L/usr/local/lib -lfaiss_c -lfaiss -lstdc++ -lm" go test -tags=vectors -ldflags "-r /usr/local/lib" ./pkg -count=1`
+  - `cd cmd/goja-bleve && ./dist/goja-bleve run ../../examples/text-search.js`
+  - `cd cmd/goja-bleve && ./dist/goja-bleve-vectors run ../../examples/hybrid-rrf.js`
+
+### Technical details
+
+The declaration golden file is `pkg/testdata/bleve.d.ts.golden`. It starts with `declare module "bleve"` and includes exported functions plus raw interfaces/types for fluent wrappers and result shapes.

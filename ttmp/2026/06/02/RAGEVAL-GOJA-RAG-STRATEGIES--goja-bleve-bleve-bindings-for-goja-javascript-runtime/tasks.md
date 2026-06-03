@@ -116,12 +116,12 @@
 
 ### Phase 8: TypeScript declarations, examples, and API documentation
 
-- [ ] Implement `TypeScriptDeclarer` for the full public API: mappings, fields, queries, search requests, indexes, batches, KNN, results, and error-relevant options.
-- [ ] Keep TypeScript declarations aligned with builder terminal `.build()` methods and Go-backed wrapper object types.
-- [ ] Add examples for text-only search, explicit mapping, batch indexing, pure KNN search, and hybrid RRF search.
-- [ ] Add a quickstart document that starts with the smallest working text index and then adds vector search under `-tags=vectors`.
-- [ ] Add a vector setup note linking to the FAISS how-to in `2026-05-27--rag-evaluation-system/docs/howto-compile-faiss-for-bleve-vectors.md`.
-- [ ] Add API snapshots or golden tests for TypeScript declaration output.
+- [x] Implement `TypeScriptDeclarer` for the full public API: mappings, fields, queries, search requests, indexes, batches, KNN, results, and error-relevant options.
+- [x] Keep TypeScript declarations aligned with builder terminal `.build()` methods and Go-backed wrapper object types.
+- [x] Add examples for text-only search, explicit mapping, batch indexing, pure KNN search, and hybrid RRF search.
+- [x] Add a quickstart document that starts with the smallest working text index and then adds vector search under `-tags=vectors`.
+- [x] Add a vector setup note linking to the FAISS how-to in `2026-05-27--rag-evaluation-system/docs/howto-compile-faiss-for-bleve-vectors.md`.
+- [x] Add API snapshots or golden tests for TypeScript declaration output.
 
 **Done when:** an implementer can discover the API from declarations and examples without reading the Go wrapper source first.
 
