@@ -88,8 +88,10 @@ type searchRequestRef struct {
 
 type batchRef struct {
 	refBase
-	index    *indexRef
-	executed bool
+	index     *indexRef
+	batch     *bleve.Batch
+	executed  bool
+	operation int
 }
 
 type knnRef struct {

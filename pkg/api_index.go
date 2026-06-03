@@ -105,6 +105,17 @@ func (m *moduleRuntime) indexObject(ref *indexRef) *goja.Object {
 		}
 		return ref.index.Delete(id)
 	})
+	m.mustSet(obj, "newBatch", func() (*goja.Object, error) {
+		if err := ref.assertOpen("index"); err != nil {
+			return nil, err
+		}
+		return m.batchObject(&batchRef{
+			refBase: refBase{api: m, kind: refKindBatch},
+			index:   ref,
+			batch:   ref.index.NewBatch(),
+		}), nil
+	})
+	m.mustSet(obj, "batch", obj.Get("newBatch"))
 	m.mustSet(obj, "search", func(requestValue goja.Value) (map[string]any, error) {
 		if err := ref.assertOpen("index"); err != nil {
 			return nil, err

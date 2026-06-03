@@ -60,12 +60,12 @@
 
 ### Phase 4: Batch API and operational ergonomics
 
-- [ ] Implement `batch.index(id, doc)`, `batch.delete(id)`, `batch.size()`, `batch.reset()`, and `batch.execute()` or the final API names chosen in the design doc.
-- [ ] Ensure batch objects are bound to a single index and cannot be executed against another index.
-- [ ] Decide whether a batch is reusable after execution; implement and document the chosen behavior.
-- [ ] Add batch-size and operation-count metadata where Bleve exposes it or where the wrapper can track it safely.
-- [ ] Add tests for mixed index/delete batches, large-ish batches, duplicate ids, and batch execution errors.
-- [ ] Add examples showing batch indexing for chunk documents with text and metadata fields.
+- [x] Implement `batch.index(id, doc)`, `batch.delete(id)`, `batch.size()`, `batch.reset()`, and `batch.execute()` or the final API names chosen in the design doc.
+- [x] Ensure batch objects are bound to a single index and cannot be executed against another index.
+- [x] Decide whether a batch is reusable after execution; implement and document the chosen behavior.
+- [x] Add batch-size and operation-count metadata where Bleve exposes it or where the wrapper can track it safely.
+- [x] Add tests for mixed index/delete batches, large-ish batches, duplicate ids, and batch execution errors.
+- [x] Add examples showing batch indexing for chunk documents with text and metadata fields.
 
 **Done when:** batch indexing works from JavaScript and all lifecycle constraints are explicit in tests and docs.
 

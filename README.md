@@ -36,6 +36,12 @@ Phase 2 exposes the core mapping surface needed for text-first indexes:
 
 The first implementation intentionally does not expose custom analyzers, custom token filters, custom tokenizers, custom date parsers, synonym sources, scoring-model configuration, or vector field options. Custom analysis is a larger Bleve registry concern and needs its own validation/error model. Vector mappings are deferred to the vector/KNN phase because they require `-tags=vectors` and FAISS setup.
 
+## Batch lifecycle
+
+`index.newBatch()` returns a batch bound to exactly one open index. A batch supports `.index(id, doc)`, `.delete(id)`, `.size()`, `.operationCount()`, `.reset()`, and `.execute()`.
+
+Batches are single-use after execution. Once `.execute()` succeeds, later mutation or reset attempts throw `bleve: batch has already been executed`. This keeps lifecycle behavior explicit and avoids ambiguity about whether a batch should retain or clear its queued operations after being submitted to Bleve.
+
 ## Vector / KNN support
 
 Bleve vector search requires the host Go binary to be compiled with:

@@ -886,3 +886,82 @@ The first BM25 path proved that basic indexing/search worked. The rest of Phase 
 ### Technical details
 
 Successful compound jsverb output includes two hits with `hasFragments: true`, `hasExplanation: true`, and `total: 2`.
+
+---
+
+## Step 12: Implement Phase 4 batch API
+
+I implemented the batch API after completing the BM25 query/search surface. JavaScript can now create an index-bound batch with `idx.newBatch()`, enqueue index and delete operations, inspect the queued size and operation count, execute the batch, and then search the indexed documents.
+
+The batch lifecycle is intentionally single-use. After `.execute()` succeeds, further `.index()`, `.delete()`, or `.reset()` calls fail with a clear error. This avoids ambiguity about whether a batch retains queued operations after execution and keeps the wrapper aligned with Bleve's statement that a batch must not be modified once execution has started.
+
+### Prompt Context
+
+**User prompt (verbatim):** "continue"
+
+**Assistant interpretation:** Continue through the next implementation phase after completing Phase 3 text search.
+
+**Inferred user intent:** Keep implementing goja-bleve in roadmap order with tests, jsverbs, diary, and commits.
+
+### What I did
+
+- Added `index.newBatch()` and `index.batch()` aliases
+- Implemented `pkg/api_batch.go`
+- Added batch methods:
+  - `.index(id, doc)`
+  - `.delete(id)`
+  - `.size()`
+  - `.operationCount()`
+  - `.reset()`
+  - `.execute()`
+- Added batch lifecycle checks for executed batches and closed indexes
+- Added `pkg/batch_test.go`
+- Added `cmd/goja-bleve/jsverbs/batch.js`
+- Regenerated xgoja and verified:
+  - `./dist/goja-bleve batch index-and-search privacy --output json`
+  - `./dist/goja-bleve batch reuse-error --output json`
+- Updated README batch lifecycle documentation
+- Checked docmgr tasks 29, 30, 31, 32, 33, and 34
+
+### Why
+
+Batch indexing is essential for RAG workloads because chunks are normally indexed in groups, not one document at a time. The batch API also exercises more lifecycle behavior: object ownership, index binding, post-execute invalidation, and closed-index failure modes.
+
+### What worked
+
+- Batch indexing works from JavaScript
+- Search after batch execution returns expected BM25 hits
+- Executed batches reject reuse
+- Batches fail clearly if their owning index has been closed
+- xgoja jsverbs validate both successful batch indexing and the reuse error path
+
+### What didn't work
+
+- N/A
+
+### What I learned
+
+- Bleve exposes both `Batch.Size()` and document size metrics. For the initial JS API, `.size()` plus wrapper-tracked `.operationCount()` are enough to inspect queued operations without exposing Bleve internals.
+
+### What was tricky to build
+
+- The wrapper has to guard against a batch outliving its index. The `batchRef` stores the owning `indexRef`, and `assertUsable()` checks both `executed` and `index.closed` before every mutating operation.
+
+### What warrants a second pair of eyes
+
+- Whether `.reset()` should be allowed after execute by creating a fresh underlying Bleve batch. I chose not to allow it because single-use semantics are easier to reason about and safer for scripts.
+
+### What should be done in the future
+
+- Move to Phase 5 vector fields and KNN search.
+- Use the FAISS setup and `-tags=vectors` command pattern already validated in the RAG evaluation system.
+
+### Code review instructions
+
+- Review `pkg/api_batch.go` and `pkg/batch_test.go`
+- Review `cmd/goja-bleve/jsverbs/batch.js`
+- Validate with `cd cmd/goja-bleve && ./dist/goja-bleve batch index-and-search privacy --output json`
+
+### Technical details
+
+Successful batch jsverb output includes `batchOperations: 3`, `docCount: 3`, and two privacy hits from the batch-indexed corpus.

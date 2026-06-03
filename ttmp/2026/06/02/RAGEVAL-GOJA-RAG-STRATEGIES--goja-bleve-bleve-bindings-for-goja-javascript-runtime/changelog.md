@@ -156,3 +156,15 @@ Completed Phase 3 BM25/text-search surface: additional query factories, bool/con
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/error_paths_test.go — Phase 3 error-path tests
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/query_search_options_test.go — Compound query
 
+
+## 2026-06-02
+
+Completed Phase 4 batch API: index-bound batches, index/delete/size/reset/execute operations, single-use lifecycle, tests, README lifecycle docs, and batch jsverb smoke checks.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/README.md — Batch lifecycle documentation
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/cmd/goja-bleve/jsverbs/batch.js — Batch jsverb smoke tests
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/api_batch.go — Batch wrapper and lifecycle rules
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/batch_test.go — Batch indexing and lifecycle tests
+
