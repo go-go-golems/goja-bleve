@@ -1125,7 +1125,7 @@ The implementation is intentionally small: `.score(...)`, `.scoreRankConstant(..
 
 **Inferred user intent:** Keep implementing goja-bleve in roadmap order, validating with tests and xgoja/jsverbs, then update ticket documentation and commit.
 
-**Commit (code):** pending — "Implement hybrid score fusion API"
+**Commit (code):** 85248e2923683c99d7af81c5227f418ada612355 — "Implement hybrid score fusion API"
 
 ### What I did
 
