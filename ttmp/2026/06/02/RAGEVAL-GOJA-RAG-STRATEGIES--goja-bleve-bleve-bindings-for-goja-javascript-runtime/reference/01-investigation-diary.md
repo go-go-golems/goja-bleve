@@ -995,7 +995,7 @@ The vector path was validated twice: first through Go tests compiled with `-tags
 
 **Inferred user intent:** Finish the next implementation phase with tests, xgoja/jsverb validation, docs, and ticket bookkeeping.
 
-**Commit (code):** 59467489bb01e6ca74835828253896ef77372b03 — "Implement vector KNN search API"
+**Commit (code):** 7d39bf6faa8e11eb5ceaf14c8c03aefd80ffa985 — "Implement vector KNN search API"
 
 ### What I did
 
