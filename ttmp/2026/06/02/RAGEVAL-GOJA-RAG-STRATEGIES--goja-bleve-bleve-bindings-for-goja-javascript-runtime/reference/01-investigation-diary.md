@@ -800,3 +800,89 @@ A native module for search is only useful once it can run a complete end-to-end 
 ### Technical details
 
 Successful jsverb output includes two rows with `total: 2`, `docCount: 3`, and ids `chunk-1` and `chunk-3` for the query `privacy`.
+
+---
+
+## Step 11: Complete Phase 3 text query and search request surface
+
+I completed the remaining Phase 3 BM25/text-search surface by adding the rest of the planned text query factories, compound query composition, and richer search request options. JavaScript can now build match, phrase, term, query-string, prefix, fuzzy, regexp, wildcard, match-all, match-none, boolean, conjunction, and disjunction queries. Search requests now support fields, pagination, sort, highlight, and explanations.
+
+The xgoja validation was extended with a compound-query jsverb. That generated command builds a small in-memory corpus, runs a boolean query with a must clause and a must-not clause, sorts results, requests highlights and explanations, and returns rows proving those result sections were populated.
+
+### Prompt Context
+
+**User prompt (verbatim):** "continue."
+
+**Assistant interpretation:** Continue implementing the next incomplete goja-bleve roadmap tasks after the initial Phase 3 BM25 subset.
+
+**Inferred user intent:** Keep making forward progress through Phase 3, commit in intervals, and maintain diary/docmgr state.
+
+### What I did
+
+- Added query factories in `pkg/api_query.go`:
+  - `matchPhrase`, `prefix`, `fuzzy`, `regexp`, `wildcard`
+  - `bool`, `conj` / `conjunction`, `disj` / `disjunction`
+- Added boolean query methods:
+  - `.addMust(...)`
+  - `.addShould(...)`
+  - `.addMustNot(...)`
+- Added search request methods in `pkg/api_search.go`:
+  - `.sort([...])`
+  - `.highlight([...], style?)`
+  - `.explain(bool)`
+- Expanded result conversion to include fragments, locations, sort values, explanations, and score breakdowns where present
+- Added `pkg/query_search_options_test.go`
+- Added `pkg/error_paths_test.go`
+- Extended `cmd/goja-bleve/jsverbs/search.js` with `compound`
+- Regenerated the xgoja command and validated:
+  - `./dist/goja-bleve search bm25 privacy --output json`
+  - `./dist/goja-bleve search compound --output json`
+- Ran validation:
+  - `go test ./... -count=1`
+  - `GOWORK=off go test ./... -count=1`
+  - `cd cmd/goja-bleve && GOWORK=off go test ./... -count=1`
+- Checked docmgr tasks 24, 25, 26, and 28
+
+### Why
+
+The first BM25 path proved that basic indexing/search worked. The rest of Phase 3 makes the text-search API expressive enough for real RAG filtering and ranking scripts: fielded queries, compound logic, pagination, sorting, highlights, and explanations.
+
+### What worked
+
+- Compound boolean queries work from JavaScript
+- Sort, highlight, and explain options work together in a search request
+- Error-path tests now cover missing create path, invalid mapping object, invalid document id, and invalid query object
+- The generated xgoja `search compound` command returns rows with fragments and explanations
+
+### What didn't work
+
+- N/A
+
+### What I learned
+
+- Bleve's simplified `SortBy([]string)` API is sufficient for the initial JS `.sort([...])` surface; custom sort objects can be deferred until a concrete need appears.
+- Highlight output is populated only when fields include term vector support, so tests and examples must set `.includeTermVectors(true)` on text fields.
+
+### What was tricky to build
+
+- Boolean/conjunction/disjunction query helpers need to unwrap Go-backed query refs from variadic JavaScript arguments. The helper `queryRefs()` centralizes this and gives consistent errors for missing or wrong wrapper types.
+
+### What warrants a second pair of eyes
+
+- The current result conversion returns explanation objects directly as Go-backed exported values. If downstream JS needs a strict JSON-only shape, we may want a recursive normalization pass later.
+
+### What should be done in the future
+
+- Move to Phase 4 batch API.
+- Add jsverbs for batch indexing once Phase 4 lands.
+
+### Code review instructions
+
+- Review `pkg/api_query.go` for query composition behavior
+- Review `pkg/api_search.go` for search request option handling and result conversion
+- Review `pkg/query_search_options_test.go`, `pkg/error_paths_test.go`, and `cmd/goja-bleve/jsverbs/search.js`
+- Validate with `cd cmd/goja-bleve && ./dist/goja-bleve search compound --output json`
+
+### Technical details
+
+Successful compound jsverb output includes two hits with `hasFragments: true`, `hasExplanation: true`, and `total: 2`.

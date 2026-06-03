@@ -143,3 +143,16 @@ Started Phase 3 text-search implementation: memory/create/open index builders, i
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/api_query.go — Basic text query factories and field/boost methods
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/api_search.go — Search request builder and result conversion
 
+
+## 2026-06-02
+
+Completed Phase 3 BM25/text-search surface: additional query factories, bool/conj/disj composition, sort/highlight/explain request options, richer result conversion, error-path tests, and compound query jsverb.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/cmd/goja-bleve/jsverbs/search.js — BM25 and compound query jsverb smoke tests
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/api_query.go — Expanded text query factories and compound query composition
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/api_search.go — Sort/highlight/explain options and richer result conversion
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/error_paths_test.go — Phase 3 error-path tests
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/query_search_options_test.go — Compound query
+

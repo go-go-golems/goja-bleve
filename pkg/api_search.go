@@ -15,6 +15,10 @@ func (m *moduleRuntime) searchRequestBuilder() *goja.Object {
 	var size int
 	var from int
 	var fields []string
+	var sort []string
+	var highlightFields []string
+	var highlightStyle string
+	var explain bool
 
 	m.mustSet(obj, "query", func(value goja.Value) (*goja.Object, error) {
 		q, err := getTypedRef[queryRef](m, value, "query")
@@ -42,6 +46,23 @@ func (m *moduleRuntime) searchRequestBuilder() *goja.Object {
 		fields = append([]string(nil), value...)
 		return obj
 	})
+	m.mustSet(obj, "sort", func(value []string) *goja.Object {
+		sort = append([]string(nil), value...)
+		return obj
+	})
+	m.mustSet(obj, "highlight", func(value ...goja.Value) (*goja.Object, error) {
+		if len(value) > 0 && !goja.IsUndefined(value[0]) && !goja.IsNull(value[0]) {
+			highlightFields = exportedStringSlice(value[0].Export())
+		}
+		if len(value) > 1 && !goja.IsUndefined(value[1]) && !goja.IsNull(value[1]) {
+			highlightStyle = value[1].String()
+		}
+		return obj, nil
+	})
+	m.mustSet(obj, "explain", func(enabled bool) *goja.Object {
+		explain = enabled
+		return obj
+	})
 	m.mustSet(obj, "build", func() (*goja.Object, error) {
 		if queryRefValue == nil || queryRefValue.query == nil {
 			return nil, fmt.Errorf("bleve: search query is required before build()")
@@ -56,6 +77,20 @@ func (m *moduleRuntime) searchRequestBuilder() *goja.Object {
 		if len(fields) > 0 {
 			request.Fields = append([]string(nil), fields...)
 		}
+		if len(sort) > 0 {
+			request.SortBy(sort)
+		}
+		if len(highlightFields) > 0 || highlightStyle != "" {
+			if highlightStyle != "" {
+				request.Highlight = bleve.NewHighlightWithStyle(highlightStyle)
+			} else {
+				request.Highlight = bleve.NewHighlight()
+			}
+			for _, field := range highlightFields {
+				request.Highlight.AddField(field)
+			}
+		}
+		request.Explain = explain
 		built := &searchRequestRef{refBase: refBase{api: m, kind: refKindSearchRequest}, request: request}
 		return m.newWrapper(built, refKindSearchRequest), nil
 	})
@@ -78,9 +113,43 @@ func searchResultToJS(result *bleve.SearchResult) map[string]any {
 }
 
 func searchHitToJS(hit *search.DocumentMatch) map[string]any {
-	return map[string]any{
+	out := map[string]any{
 		"id":     hit.ID,
 		"score":  hit.Score,
 		"fields": hit.Fields,
+	}
+	if len(hit.Fragments) > 0 {
+		out["fragments"] = hit.Fragments
+	}
+	if len(hit.Locations) > 0 {
+		out["locations"] = hit.Locations
+	}
+	if len(hit.Sort) > 0 {
+		out["sort"] = hit.Sort
+	}
+	if hit.Expl != nil {
+		out["explanation"] = hit.Expl
+	}
+	if len(hit.ScoreBreakdown) > 0 {
+		out["scoreBreakdown"] = hit.ScoreBreakdown
+	}
+	return out
+}
+
+func exportedStringSlice(v any) []string {
+	switch vv := v.(type) {
+	case []string:
+		return append([]string(nil), vv...)
+	case []any:
+		out := make([]string, 0, len(vv))
+		for _, item := range vv {
+			out = append(out, fmt.Sprint(item))
+		}
+		return out
+	default:
+		if v == nil {
+			return nil
+		}
+		return []string{fmt.Sprint(v)}
 	}
 }

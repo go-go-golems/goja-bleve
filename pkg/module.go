@@ -106,8 +106,18 @@ func (m *moduleRuntime) installExports(exports *goja.Object) {
 	m.mustSet(exports, "memory", m.memoryIndexBuilder)
 
 	m.mustSet(exports, "match", m.matchQuery)
+	m.mustSet(exports, "matchPhrase", m.matchPhraseQuery)
 	m.mustSet(exports, "term", m.termQuery)
 	m.mustSet(exports, "queryString", m.queryStringQuery)
+	m.mustSet(exports, "prefix", m.prefixQuery)
+	m.mustSet(exports, "fuzzy", m.fuzzyQuery)
+	m.mustSet(exports, "regexp", m.regexpQuery)
+	m.mustSet(exports, "wildcard", m.wildcardQuery)
+	m.mustSet(exports, "bool", m.boolQuery)
+	m.mustSet(exports, "conj", m.conjunctionQuery)
+	m.mustSet(exports, "conjunction", m.conjunctionQuery)
+	m.mustSet(exports, "disj", m.disjunctionQuery)
+	m.mustSet(exports, "disjunction", m.disjunctionQuery)
 	m.mustSet(exports, "matchAll", m.matchAllQuery)
 	m.mustSet(exports, "matchNone", m.matchNoneQuery)
 }

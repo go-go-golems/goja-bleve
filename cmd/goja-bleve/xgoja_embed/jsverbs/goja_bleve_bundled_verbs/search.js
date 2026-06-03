@@ -43,3 +43,33 @@ __verb__("bm25", {
     query: { argument: true, default: "privacy", help: "Search query text" }
   }
 });
+
+function compound() {
+  const idx = buildTextIndex();
+  const q = bleve.bool()
+    .addMust(bleve.match("privacy").field("text"))
+    .addMustNot(bleve.term("flowering").field("text"));
+  const req = bleve.search()
+    .query(q)
+    .fields(["text", "source_id"])
+    .highlight(["text"])
+    .explain(true)
+    .sort(["source_id"])
+    .size(10)
+    .build();
+  const result = idx.search(req);
+  idx.close();
+  return result.hits.map((hit, rank) => ({
+    rank: rank + 1,
+    id: hit.id,
+    score: hit.score,
+    text: hit.fields.text,
+    hasFragments: !!hit.fragments,
+    hasExplanation: !!hit.explanation,
+    total: result.total
+  }));
+}
+
+__verb__("compound", {
+  short: "Run a compound bool query with sorting, highlighting, and explanations"
+});
