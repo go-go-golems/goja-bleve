@@ -1222,7 +1222,7 @@ The important outcome is that host applications can now rely on two supported pa
 
 **Inferred user intent:** Keep moving through the roadmap, preserving validation, ticket state, and commit hygiene.
 
-**Commit (code):** pending — "Add provider integration tests and TypeScript descriptor"
+**Commit (code):** 3dc4ad4099cee65ca009d72b2acb903c2810fd73 — "Add provider integration tests and TypeScript descriptor"
 
 ### What I did
 
