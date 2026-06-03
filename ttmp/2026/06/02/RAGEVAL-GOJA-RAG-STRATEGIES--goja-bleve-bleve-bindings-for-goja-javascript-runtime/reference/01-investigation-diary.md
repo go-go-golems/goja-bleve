@@ -15,16 +15,29 @@ Owners: []
 RelatedFiles:
     - Path: 2026-05-27--rag-evaluation-system/cmd/experiments/bleve-knn/main.go
       Note: Standalone bleve vector/KNN experiment now runs end-to-end with local FAISS libraries
+    - Path: cmd/goja-bleve/jsverbs/vector.js
+      Note: Generated-runtime vector KNN smoke verb
     - Path: faiss/tests/test_hamming.cpp
       Note: Patched hamming test ids to use faiss::int_maxheap_array_t::TI so full FAISS build succeeds
     - Path: goja-bleve/ttmp/2026/06/02/RAGEVAL-GOJA-RAG-STRATEGIES--goja-bleve-bleve-bindings-for-goja-javascript-runtime/reference/01-investigation-diary.md
       Note: Recorded FAISS full build patch and validation
+    - Path: pkg/api_mapping.go
+      Note: Vector field builder API
+    - Path: pkg/api_search.go
+      Note: KNN search request builder API
+    - Path: pkg/vector_api.go
+      Note: Non-vector build-tag helper stubs for Phase 5
+    - Path: pkg/vector_api_vectors.go
+      Note: Vector build-tag helpers for field mappings
+    - Path: pkg/vector_knn_test.go
+      Note: Vector-tagged KNN integration and error-path tests
 ExternalSources: []
 Summary: Chronological investigation diary for goja-bleve design, FAISS build, and vector search experiment.
 LastUpdated: 2026-06-02T22:30:00-04:00
 WhatFor: Track design decisions, FAISS build steps, and experiment progress
 WhenToUse: When resuming work on the goja-bleve module or FAISS/vector experiments
 ---
+
 
 
 
@@ -965,3 +978,122 @@ Batch indexing is essential for RAG workloads because chunks are normally indexe
 ### Technical details
 
 Successful batch jsverb output includes `batchOperations: 3`, `docCount: 3`, and two privacy hits from the batch-indexed corpus.
+
+---
+
+## Step 13: Implement Phase 5 vector fields and KNN search
+
+I implemented the vector/KNN phase with build-tag-safe boundaries. The default non-vector build still compiles and imports normally, while vector-only Bleve symbols live in `//go:build vectors` helper files. JavaScript now has vector field builders, KNN search request clauses, and KNN operator selection; non-vector binaries report clear unavailable errors instead of failing at module load time.
+
+The vector path was validated twice: first through Go tests compiled with `-tags=vectors` and the installed FAISS linker flags, then through a generated xgoja vector binary running the `vector knn` jsverb. The smoke test creates a persisted Bleve index, indexes three embeddings, and returns `chunk-1` then `chunk-3` for the query vector `[1, 0, 0, 0]`.
+
+### Prompt Context
+
+**User prompt (verbatim):** "continue, from last summary"
+
+**Assistant interpretation:** Continue the roadmap from the prior compacted session summary, starting with Phase 5 vector/KNN support.
+
+**Inferred user intent:** Finish the next implementation phase with tests, xgoja/jsverb validation, docs, and ticket bookkeeping.
+
+**Commit (code):** 59467489bb01e6ca74835828253896ef77372b03 — "Implement vector KNN search API"
+
+### What I did
+
+- Added vector build-tag helpers:
+  - `pkg/vector_api.go`
+  - `pkg/vector_api_vectors.go`
+- Added vector field builder methods in `pkg/api_mapping.go`:
+  - `.vector(dims)`
+  - `.vectorBase64(dims)`
+  - `.similarity(...)`
+  - `.optimizedFor(...)`
+- Added JS vector conversion in `pkg/codec.go` with finite-number checks.
+- Added search request KNN methods in `pkg/api_search.go`:
+  - `.knn(field, vector, k, boost?)`
+  - `.knnOperator("or" | "and")`
+- Added index-side KNN validation in `pkg/api_index.go` so KNN fields and dimensions are checked against the index mapping before search execution.
+- Extended `indexRef` in `pkg/api_types.go` to retain the index mapping for validation.
+- Added non-vector tests in `pkg/vector_unavailable_test.go`.
+- Added vector-tagged tests in `pkg/vector_knn_test.go` for:
+  - successful KNN ranking
+  - invalid `k`
+  - non-finite vector values
+  - unsupported similarity
+  - missing vector field
+  - dimension mismatch
+- Added `cmd/goja-bleve/jsverbs/vector.js`.
+- Added `cmd/goja-bleve/xgoja-vectors.yaml` for a vector-specific generated binary.
+- Updated `README.md` with vector API examples and build/test commands.
+- Regenerated xgoja artifacts and validated the vector jsverb.
+- Checked all Phase 5 tasks in `tasks.md`.
+
+### Why
+
+RAG workloads need vector search over chunk embeddings, and the design goal is to expose Bleve's native vector path through the same builder-style JavaScript API as BM25 search. Keeping vector symbols in build-tagged files prevents the default build from depending on FAISS while still making the API discoverable and safely unavailable when the binary lacks vector support.
+
+### What worked
+
+- Non-vector builds still pass and vector methods return clear `-tags=vectors` errors.
+- Vector builds can create vector mappings and run KNN search through Bleve/FAISS.
+- Persisted indexes exercise the vector path correctly; the vector jsverb returns the expected nearest-neighbor ranking.
+- `.knnOperator("or")` works through Bleve's `SearchRequest.AddKNNOperator` API even though the operator type is unexported.
+- Wrapper-level validation catches missing KNN fields and dimension mismatches before returning confusing empty-result behavior.
+
+### What didn't work
+
+- The first vector test used `bleve.memory()`, but KNN returned no hits. Switching the test to `bleve.create(tempPath)` matched the already validated persisted-index FAISS path and produced the expected KNN ranking.
+- The initial vector dimension mismatch test expected Bleve to fail directly, but Bleve returned no error in the tiny test. I added wrapper-level validation by retaining the index mapping on `indexRef` and checking KNN vector dimensions before `Index.Search`.
+- The first non-vector unavailable test reused one VM and redeclared `const bleve`, producing `SyntaxError: Identifier 'bleve' has already been declared`; each subcase now uses a fresh VM.
+
+### What I learned
+
+- Bleve vector mapping constructors and KNN request fields are build-tag-only, so the wrapper must avoid referencing them in normal builds.
+- Bleve's persisted index path is the reliable path for FAISS KNN validation; `NewMemOnly` is not a good vector smoke-test baseline.
+- `IndexMappingImpl.FieldMappingForPath` returns a value, not a pointer, so missing fields are detected by an empty `Type` rather than `nil`.
+
+### What was tricky to build
+
+- The main sharp edge was keeping one public JS API while compiling two different Go worlds. The solution was to expose public builder methods unconditionally but delegate vector-only work to helpers split across `vector_api.go` and `vector_api_vectors.go`.
+- KNN dimension validation is naturally index-mapping-dependent, while search requests are built independently. Retaining the concrete mapping on `indexRef` allowed validation at `idx.search(req)` time, which is the first point where both request and mapping are available.
+
+### What warrants a second pair of eyes
+
+- The JS vector converter currently supports array-like numeric values through indexed `length`; confirm whether typed-array coverage is sufficient for downstream scripts or whether explicit `ArrayBuffer`/typed-array handling should be benchmarked and expanded.
+- The persisted-index requirement for vector smoke tests should be reviewed before adding CI, because CI will need FAISS and writable temp storage.
+- KNN field validation checks that a field is mapped and has matching dimensions, but it does not currently assert that the field type is exactly vector/vector_base64.
+
+### What should be done in the future
+
+- Phase 6 should add hybrid BM25+KNN score selection and score-fusion controls.
+- Add Makefile targets for vector tests and vector xgoja jsverb smoke commands.
+- Consider optional `.knnFilter(...)` and search-param support if RAG scripts need pre-filtered KNN or FAISS IVF tuning.
+
+### Code review instructions
+
+- Start with `pkg/vector_api.go` and `pkg/vector_api_vectors.go` to review build-tag boundaries.
+- Review `pkg/api_mapping.go` for vector field builder mutation and similarity/optimization normalization.
+- Review `pkg/api_search.go` and `pkg/api_index.go` for KNN request construction and index-mapping validation.
+- Review `pkg/vector_knn_test.go` and `pkg/vector_unavailable_test.go` for vector and non-vector behavior.
+- Review `cmd/goja-bleve/jsverbs/vector.js` and `cmd/goja-bleve/xgoja-vectors.yaml` for generated-runtime validation.
+- Validate with:
+  - `go test ./... -count=1`
+  - `GOWORK=off go test ./... -count=1`
+  - `GOWORK=off CGO_LDFLAGS="-L/usr/local/lib -lfaiss_c -lfaiss -lstdc++ -lm" go test -tags=vectors -ldflags "-r /usr/local/lib" ./pkg -count=1`
+  - `cd cmd/goja-bleve && ./dist/goja-bleve-vectors vector knn --output json`
+
+### Technical details
+
+Validated vector xgoja build command:
+
+```bash
+cd cmd/goja-bleve
+GOWORK=off CGO_LDFLAGS="-L/usr/local/lib -lfaiss_c -lfaiss -lstdc++ -lm" \
+  go run github.com/go-go-golems/go-go-goja/cmd/xgoja@v0.7.4 build \
+  -f xgoja-vectors.yaml \
+  --work-dir /tmp/goja-bleve-vector-work \
+  --keep-work \
+  --xgoja-version v0.7.4
+./dist/goja-bleve-vectors vector knn --output json
+```
+
+Successful vector jsverb output returns two hits: `chunk-1` with score `1`, followed by `chunk-3` with score about `0.9938837`.

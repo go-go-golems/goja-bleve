@@ -168,3 +168,13 @@ Completed Phase 4 batch API: index-bound batches, index/delete/size/reset/execut
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/api_batch.go — Batch wrapper and lifecycle rules
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/batch_test.go — Batch indexing and lifecycle tests
 
+
+## 2026-06-02
+
+Step 13: Implemented Phase 5 vector field mappings and KNN search with build-tag-safe helpers, FAISS vector tests, and xgoja vector smoke validation
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/vector_api_vectors.go — Vector support implementation
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/pkg/vector_knn_test.go — Vector validation coverage
+

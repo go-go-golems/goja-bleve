@@ -34,9 +34,10 @@ type refBase struct {
 
 type indexRef struct {
 	refBase
-	name  string
-	path  string
-	index bleve.Index
+	name    string
+	path    string
+	index   bleve.Index
+	mapping *mapping.IndexMappingImpl
 }
 
 type indexBuilderRef struct {

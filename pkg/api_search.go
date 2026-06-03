@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"fmt"
+	"strings"
 
 	bleve "github.com/blevesearch/bleve/v2"
 	"github.com/blevesearch/bleve/v2/search"
@@ -19,6 +20,8 @@ func (m *moduleRuntime) searchRequestBuilder() *goja.Object {
 	var highlightFields []string
 	var highlightStyle string
 	var explain bool
+	var knnClauses []*knnRef
+	var knnOperator string
 
 	m.mustSet(obj, "query", func(value goja.Value) (*goja.Object, error) {
 		q, err := getTypedRef[queryRef](m, value, "query")
@@ -63,6 +66,38 @@ func (m *moduleRuntime) searchRequestBuilder() *goja.Object {
 		explain = enabled
 		return obj
 	})
+	m.mustSet(obj, "knnOperator", func(operator string) (*goja.Object, error) {
+		normalized := strings.TrimSpace(strings.ToLower(operator))
+		if normalized != "or" && normalized != "and" {
+			return nil, fmt.Errorf("bleve: KNN operator must be 'or' or 'and'")
+		}
+		knnOperator = normalized
+		return obj, nil
+	})
+	m.mustSet(obj, "knn", func(field string, vectorValue goja.Value, k int, boostValue ...float64) (*goja.Object, error) {
+		if !m.vectorSupport {
+			return nil, fmt.Errorf("bleve: KNN search requires building the host with -tags=vectors")
+		}
+		if field == "" {
+			return nil, fmt.Errorf("bleve: KNN field is required")
+		}
+		if k <= 0 {
+			return nil, fmt.Errorf("bleve: KNN k must be positive")
+		}
+		vector, err := valueToFloat32Vector(m.vm, vectorValue, 0)
+		if err != nil {
+			return nil, err
+		}
+		boost := 1.0
+		if len(boostValue) > 0 {
+			boost = boostValue[0]
+		}
+		if boost <= 0 {
+			return nil, fmt.Errorf("bleve: KNN boost must be positive")
+		}
+		knnClauses = append(knnClauses, &knnRef{field: field, vector: vector, k: k, boost: boost})
+		return obj, nil
+	})
 	m.mustSet(obj, "build", func() (*goja.Object, error) {
 		if queryRefValue == nil || queryRefValue.query == nil {
 			return nil, fmt.Errorf("bleve: search query is required before build()")
@@ -88,6 +123,16 @@ func (m *moduleRuntime) searchRequestBuilder() *goja.Object {
 			}
 			for _, field := range highlightFields {
 				request.Highlight.AddField(field)
+			}
+		}
+		if knnOperator != "" {
+			if err := setKNNOperator(request, knnOperator); err != nil {
+				return nil, err
+			}
+		}
+		for _, knn := range knnClauses {
+			if err := addKNNToSearchRequest(request, knn.field, knn.vector, int64(knn.k), knn.boost); err != nil {
+				return nil, err
 			}
 		}
 		request.Explain = explain

@@ -173,6 +173,22 @@ func (m *moduleRuntime) fieldBuilder() *goja.Object {
 		ref.mapping = &mapping.FieldMapping{Index: false, Store: false, DocValues: false}
 		return obj
 	})
+	m.mustSet(obj, "vector", func(dims int) (*goja.Object, error) {
+		field, err := newVectorFieldMapping(dims, false)
+		if err != nil {
+			return nil, err
+		}
+		ref.mapping = field
+		return obj, nil
+	})
+	m.mustSet(obj, "vectorBase64", func(dims int) (*goja.Object, error) {
+		field, err := newVectorFieldMapping(dims, true)
+		if err != nil {
+			return nil, err
+		}
+		ref.mapping = field
+		return obj, nil
+	})
 	m.installFieldOptions(obj, ref)
 	m.mustSet(obj, "build", func() (*goja.Object, error) {
 		if ref.mapping == nil {
@@ -232,4 +248,44 @@ func (m *moduleRuntime) installFieldOptions(obj *goja.Object, ref *fieldBuilderR
 		ensure().DateFormat = name
 		return obj, nil
 	})
+	m.mustSet(obj, "similarity", func(name string) (*goja.Object, error) {
+		if strings.TrimSpace(name) == "" {
+			return nil, fmt.Errorf("bleve: vector similarity is required")
+		}
+		ensure().Similarity = normalizeVectorSimilarity(name)
+		return obj, nil
+	})
+	m.mustSet(obj, "optimizedFor", func(name string) (*goja.Object, error) {
+		if strings.TrimSpace(name) == "" {
+			return nil, fmt.Errorf("bleve: vector optimization target is required")
+		}
+		ensure().VectorIndexOptimizedFor = normalizeVectorOptimization(name)
+		return obj, nil
+	})
+}
+
+func normalizeVectorSimilarity(name string) string {
+	switch strings.TrimSpace(strings.ToLower(name)) {
+	case "cosine":
+		return "cosine"
+	case "dot", "dot_product", "dot-product":
+		return "dot_product"
+	case "l2", "l2_norm", "l2-norm", "euclidean":
+		return "l2_norm"
+	default:
+		return name
+	}
+}
+
+func normalizeVectorOptimization(name string) string {
+	switch strings.TrimSpace(strings.ToLower(name)) {
+	case "recall", "flat", "ivf":
+		return "recall"
+	case "latency":
+		return "latency"
+	case "memory", "memory-efficient", "memory_efficient":
+		return "memory-efficient"
+	default:
+		return name
+	}
 }

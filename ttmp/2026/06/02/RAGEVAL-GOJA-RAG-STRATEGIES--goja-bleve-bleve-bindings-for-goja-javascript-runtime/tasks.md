@@ -19,7 +19,7 @@
 - [x] Implement `moduleRuntime` with references to the `goja.Runtime`, exported module object, open index registry, vector support flag, and cleanup hooks.
 - [x] Implement the hidden-reference helper pattern based on geppetto: `attachRef(value, ref)` and `getRef[T](value, expectedType)` using a non-enumerable `__bleve_ref` property.
 - [x] Define Go-backed reference structs for each JS wrapper: `indexRef`, `mappingRef`, `docMappingRef`, `fieldMappingRef`, `queryRef`, `searchRequestRef`, `batchRef`, `knnRef`, and result wrappers where needed.
-- [ ] Define consistent error behavior for wrong wrapper types, missing refs, closed indexes, double-close, and attempts to reuse batches after execution.
+- [x] Define consistent error behavior for wrong wrapper types, missing refs, closed indexes, double-close, and attempts to reuse batches after execution.
 - [x] Add tests that pass the wrong JS objects into builder methods and verify that errors are clear and type-specific rather than panics.
 - [x] Add tests that prove wrapper objects do not expose implementation refs during normal JS enumeration or JSON serialization.
 
@@ -73,15 +73,15 @@
 
 ### Phase 5: Vector field mappings and KNN search
 
-- [ ] Add build-tag-aware vector support detection so the module knows whether it was compiled with Bleve vector support.
-- [ ] Implement vector field builder APIs: `.vector(dims)`, `.vectorBase64(dims)`, `.similarity("cosine" | "dot_product" | "l2_norm")`, and `.optimizedFor("recall" | "memory" | "latency")` as supported by Bleve.
-- [ ] Make vector builder methods fail with a clear error when the module was not compiled with `-tags=vectors`.
-- [ ] Implement JS vector conversion in `codec.go`: regular JS arrays, typed arrays where practical, and validation for finite numeric values and exact dimension count.
-- [ ] Implement KNN request builder or search-request `.knn(field, vector, k, boost)` method using Bleve's `SearchRequest.AddKNN` path.
-- [ ] Implement KNN operator support if exposed by Bleve: OR/AND semantics for combining multiple KNN clauses.
-- [ ] Add vector integration tests gated by `//go:build vectors` that create a vector field index, index embeddings, query with a known vector, and assert nearest-neighbor ranking.
-- [ ] Reuse the validated FAISS command pattern from the RAG evaluation system: `CGO_LDFLAGS="-L/usr/local/lib -lfaiss_c -lfaiss -lstdc++ -lm"` plus `-tags=vectors`.
-- [ ] Add tests for dimension mismatch, unsupported similarity value, missing vector field, invalid KNN `k`, and non-finite vector values.
+- [x] Add build-tag-aware vector support detection so the module knows whether it was compiled with Bleve vector support.
+- [x] Implement vector field builder APIs: `.vector(dims)`, `.vectorBase64(dims)`, `.similarity("cosine" | "dot_product" | "l2_norm")`, and `.optimizedFor("recall" | "memory" | "latency")` as supported by Bleve.
+- [x] Make vector builder methods fail with a clear error when the module was not compiled with `-tags=vectors`.
+- [x] Implement JS vector conversion in `codec.go`: regular JS arrays, typed arrays where practical, and validation for finite numeric values and exact dimension count.
+- [x] Implement KNN request builder or search-request `.knn(field, vector, k, boost)` method using Bleve's `SearchRequest.AddKNN` path.
+- [x] Implement KNN operator support if exposed by Bleve: OR/AND semantics for combining multiple KNN clauses.
+- [x] Add vector integration tests gated by `//go:build vectors` that create a vector field index, index embeddings, query with a known vector, and assert nearest-neighbor ranking.
+- [x] Reuse the validated FAISS command pattern from the RAG evaluation system: `CGO_LDFLAGS="-L/usr/local/lib -lfaiss_c -lfaiss -lstdc++ -lm"` plus `-tags=vectors`.
+- [x] Add tests for dimension mismatch, unsupported similarity value, missing vector field, invalid KNN `k`, and non-finite vector values.
 
 **Done when:** JavaScript can create a vector-enabled Bleve index, index embeddings, and run pure KNN search under `-tags=vectors`.
 

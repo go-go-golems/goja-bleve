@@ -73,7 +73,7 @@ func (m *moduleRuntime) buildIndex(builder *indexBuilderRef) (*goja.Object, erro
 	if name == "" {
 		name = "memory"
 	}
-	ref := &indexRef{refBase: refBase{api: m, kind: refKindIndex}, name: name, path: builder.path, index: idx}
+	ref := &indexRef{refBase: refBase{api: m, kind: refKindIndex}, name: name, path: builder.path, index: idx, mapping: mapping}
 	m.openIndexes[name] = ref
 	return m.indexObject(ref), nil
 }
@@ -126,6 +126,9 @@ func (m *moduleRuntime) indexObject(ref *indexRef) *goja.Object {
 		}
 		if requestRef.request == nil {
 			return nil, fmt.Errorf("bleve: search request is not built")
+		}
+		if err := validateKNNAgainstIndexMapping(ref.mapping, requestRef.request); err != nil {
+			return nil, err
 		}
 		result, err := ref.index.Search(requestRef.request)
 		if err != nil {
