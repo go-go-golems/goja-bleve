@@ -16,7 +16,7 @@ var moduleNames = []string{
 }
 
 // Register exposes goja-bleve modules as xgoja provider modules.
-func Register(registry *providerapi.Registry) error {
+func Register(registry *providerapi.ProviderRegistry) error {
 	entries := make([]providerapi.Entry, 0, len(moduleNames))
 	for _, name := range moduleNames {
 		mod := modules.GetModule(name)
@@ -33,7 +33,7 @@ func nativeModuleEntry(mod modules.NativeModule) providerapi.Module {
 		Name:        mod.Name(),
 		DefaultAs:   mod.Name(),
 		Description: mod.Doc(),
-		New: func(providerapi.ModuleContext) (require.ModuleLoader, error) {
+		NewModuleFactory: func(providerapi.ModuleSetupContext) (require.ModuleLoader, error) {
 			return mod.Loader, nil
 		},
 	}

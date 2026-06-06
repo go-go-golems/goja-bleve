@@ -8,7 +8,7 @@ import (
 )
 
 func TestRegisterAddsBleveModule(t *testing.T) {
-	registry := providerapi.NewRegistry()
+	registry := providerapi.NewProviderRegistry()
 	if err := Register(registry); err != nil {
 		t.Fatalf("Register: %v", err)
 	}
@@ -22,7 +22,7 @@ func TestRegisterAddsBleveModule(t *testing.T) {
 	if entry.Description == "" {
 		t.Fatalf("expected provider module description")
 	}
-	if _, err := entry.New(providerapi.ModuleContext{Name: blevemodule.ModuleName, As: blevemodule.ModuleName}); err != nil {
+	if _, err := entry.NewModuleFactory(providerapi.ModuleSetupContext{Name: blevemodule.ModuleName, As: blevemodule.ModuleName}); err != nil {
 		t.Fatalf("module factory: %v", err)
 	}
 }

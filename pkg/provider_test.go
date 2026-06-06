@@ -35,7 +35,7 @@ func TestNativeModuleRegistersWithDefaultRegistryAndTypescript(t *testing.T) {
 }
 
 func TestRegisterProviderResolvesBleveModuleAndCanRequire(t *testing.T) {
-	registry := providerapi.NewRegistry()
+	registry := providerapi.NewProviderRegistry()
 	if err := RegisterProvider(registry); err != nil {
 		t.Fatalf("RegisterProvider: %v", err)
 	}
@@ -46,7 +46,7 @@ func TestRegisterProviderResolvesBleveModuleAndCanRequire(t *testing.T) {
 	if entry.DefaultAs != ModuleName {
 		t.Fatalf("DefaultAs = %q", entry.DefaultAs)
 	}
-	loader, err := entry.New(providerapi.ModuleContext{Name: ModuleName, As: ModuleName})
+	loader, err := entry.NewModuleFactory(providerapi.ModuleSetupContext{Name: ModuleName, As: ModuleName})
 	if err != nil {
 		t.Fatalf("provider module factory: %v", err)
 	}

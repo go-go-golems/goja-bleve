@@ -11,12 +11,12 @@ const ProviderPackageID = "goja-bleve"
 // registry. The module currently has no provider-level configuration schema:
 // index path policy and runtime cleanup are host-application responsibilities.
 // The JavaScript API still makes lifecycle explicit through index.close().
-func RegisterProvider(registry *providerapi.Registry) error {
+func RegisterProvider(registry *providerapi.ProviderRegistry) error {
 	return registry.Package(ProviderPackageID, providerapi.Module{
 		Name:        ModuleName,
 		DefaultAs:   ModuleName,
 		Description: module{}.Doc(),
-		New: func(providerapi.ModuleContext) (require.ModuleLoader, error) {
+		NewModuleFactory: func(providerapi.ModuleSetupContext) (require.ModuleLoader, error) {
 			return NewLoader(), nil
 		},
 	})

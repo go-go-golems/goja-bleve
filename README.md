@@ -110,7 +110,7 @@ reg.Enable(vm)
 xgoja hosts should use the provider package:
 
 ```go
-registry := providerapi.NewRegistry()
+registry := providerapi.NewProviderRegistry()
 err := bleveprovider.Register(registry)
 ```
 

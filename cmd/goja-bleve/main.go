@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 
+	geppetto "github.com/go-go-golems/geppetto/pkg/js/modules/geppetto/provider"
 	"github.com/go-go-golems/go-go-goja/pkg/xgoja/app"
 	"github.com/go-go-golems/go-go-goja/pkg/xgoja/providerapi"
 	go_go_goja_core "github.com/go-go-golems/go-go-goja/pkg/xgoja/providers/core"
@@ -15,11 +16,11 @@ import (
 )
 
 const embeddedSpecJSON = `{
-  "name": "goja-bleve",
+  "name": "goja-bleve-vectors",
   "appName": "goja-bleve",
   "target": {
     "kind": "xgoja",
-    "output": "dist/goja-bleve"
+    "output": "dist/goja-bleve-vectors"
   },
   "packages": [
     {
@@ -30,64 +31,70 @@ const embeddedSpecJSON = `{
       "replace": "../.."
     },
     {
+      "id": "geppetto",
+      "import": "github.com/go-go-golems/geppetto/pkg/js/modules/geppetto/provider",
+      "version": "v0.0.0",
+      "register": "Register",
+      "replace": "../../../geppetto"
+    },
+    {
       "id": "go-go-goja-core",
       "import": "github.com/go-go-golems/go-go-goja/pkg/xgoja/providers/core",
-      "register": "Register"
+      "register": "Register",
+      "replace": "../../../go-go-goja"
     },
     {
       "id": "go-go-goja-host",
       "import": "github.com/go-go-golems/go-go-goja/pkg/xgoja/providers/host",
-      "register": "Register"
+      "register": "Register",
+      "replace": "../../../go-go-goja"
     }
   ],
-  "runtimes": {
-    "main": {
-      "modules": [
-        {
-          "package": "goja-bleve",
-          "name": "bleve",
-          "as": "bleve"
-        },
-        {
-          "package": "go-go-goja-core",
-          "name": "path",
-          "as": "path"
-        },
-        {
-          "package": "go-go-goja-core",
-          "name": "yaml",
-          "as": "yaml"
-        },
-        {
-          "package": "go-go-goja-host",
-          "name": "fs",
-          "as": "fs",
-          "config": {
-            "allow": true
-          }
-        }
-      ]
+  "modules": [
+    {
+      "package": "goja-bleve",
+      "name": "bleve",
+      "as": "bleve"
+    },
+    {
+      "package": "geppetto",
+      "name": "geppetto",
+      "as": "geppetto"
+    },
+    {
+      "package": "go-go-goja-core",
+      "name": "path",
+      "as": "path"
+    },
+    {
+      "package": "go-go-goja-core",
+      "name": "yaml",
+      "as": "yaml"
+    },
+    {
+      "package": "go-go-goja-host",
+      "name": "fs",
+      "as": "fs",
+      "config": {
+        "allow": true
+      }
     }
-  },
+  ],
   "commands": {
     "eval": {
       "enabled": true,
-      "runtime": "main",
       "name": "eval"
     },
     "run": {
       "enabled": true,
-      "runtime": "main",
       "name": "run"
     },
     "repl": {
       "enabled": true,
-      "runtime": "main",
       "name": "repl"
     },
     "jsverbs": {
       "enabled": true,
-      "runtime": "main",
       "name": "verbs",
       "mount": "root"
     }
@@ -106,8 +113,9 @@ const embeddedSpecJSON = `{
 var embeddedJSVerbs embed.FS
 
 func main() {
-	registry := providerapi.NewRegistry()
+	registry := providerapi.NewProviderRegistry()
 	must(goja_bleve.Register(registry))
+	must(geppetto.Register(registry))
 	must(go_go_goja_core.Register(registry))
 	must(go_go_goja_host.Register(registry))
 	root, err := app.NewRootCommand(app.Options{Providers: registry, SpecJSON: embeddedSpecJSON, EmbeddedJSVerbs: embeddedJSVerbs, EmbeddedHelp: nil, EmbeddedAssets: nil})
@@ -118,10 +126,10 @@ func main() {
 	}
 }
 
-func decodeSpec() *app.Spec {
-	spec := &app.Spec{}
-	must(json.Unmarshal([]byte(embeddedSpecJSON), spec))
-	return spec
+func decodeSpec() *app.RuntimeSpec {
+	buildSpec := &app.RuntimeSpec{}
+	must(json.Unmarshal([]byte(embeddedSpecJSON), buildSpec))
+	return buildSpec
 }
 
 func must(err error) {
