@@ -154,16 +154,16 @@ GOWORK=off go generate ./...
 ./dist/goja-bleve batch index-and-search privacy --output json
 ```
 
-For vector jsverbs, build the vector-specific xgoja spec:
+For vector jsverbs, use the generated xgoja smoke target. This builds `cmd/goja-bleve/xgoja-vectors.yaml` with `-tags=vectors`, FAISS CGO linker flags, and rpath settings, then runs the deterministic vector KNN and hybrid verbs:
+
+```bash
+make xgoja-smoke-vectors
+```
+
+Equivalent commands after the binary has been built are:
 
 ```bash
 cd cmd/goja-bleve
-GOWORK=off \
-  go run github.com/go-go-golems/go-go-goja/cmd/xgoja@v0.8.3 build \
-  -f xgoja-vectors.yaml \
-  --work-dir /tmp/goja-bleve-vector-work \
-  --keep-work \
-  --xgoja-version v0.8.3
 ./dist/goja-bleve-vectors vector knn --output json
 ./dist/goja-bleve-vectors vector hybrid --output json
 ```
@@ -174,5 +174,6 @@ GOWORK=off \
 go test ./... -count=1
 GOWORK=off go test ./... -count=1
 make test-vectors
+make xgoja-smoke-vectors
 cd cmd/goja-bleve && GOWORK=off go test ./... -count=1
 ```

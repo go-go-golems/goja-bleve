@@ -137,7 +137,7 @@ The target passed locally with the existing FAISS installation. The generated bi
 
 **Inferred user intent:** Make steady, reviewable progress while preserving a clear continuation trail and avoiding one large opaque change.
 
-**Commit (code):** fc3a509ad0581ded90c180dcbd09176d99d32cd9 — "Add generated xgoja vector smoke target"
+**Commit (code):** 10e75adee33d149391e5966310228fbee8160453 — "Add generated xgoja vector smoke target"
 
 ### What I did
 
@@ -217,4 +217,98 @@ make xgoja-smoke-vectors
   -> go run github.com/go-go-golems/go-go-goja/cmd/xgoja@v0.8.3 build -f xgoja-vectors.yaml
   -> ./dist/goja-bleve-vectors vector knn --output json
   -> ./dist/goja-bleve-vectors vector hybrid --output json
+```
+
+
+## Step 3: Document the generated xgoja vector smoke target
+
+I updated the public documentation so the new Makefile target is discoverable from the README, quickstart, documentation index, and FAISS/xgoja playbook. The docs now distinguish package vector tests from generated xgoja smoke tests instead of asking readers to copy the long xgoja build command by hand.
+
+The validation commands still pass after the documentation update. This confirms the documented target is not merely aspirational: it builds the vector host from the checked-in YAML spec and runs the KNN and hybrid jsverbs against the local FAISS setup.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 2)
+
+**Assistant interpretation:** Continue implementing incrementally, update docs as soon as a working target exists, and commit this as a separate reviewable slice.
+
+**Inferred user intent:** Keep the repository usable for future contributors by making every new workflow discoverable and backed by validation evidence.
+
+**Commit (code):** TBD — pending documentation commit.
+
+### What I did
+
+- Updated `/home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/README.md`:
+  - replaced the long manual xgoja vector build recipe with `make xgoja-smoke-vectors`,
+  - kept the equivalent direct binary commands for readers who want to inspect the generated host,
+  - added `make xgoja-smoke-vectors` to development validation.
+- Updated `/home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/docs/quickstart.md`:
+  - explained that `make test-vectors` validates package-level vector tests,
+  - added `make xgoja-smoke-vectors` for generated host and jsverb smoke coverage.
+- Updated `/home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/docs/faiss-xgoja-playbook.md`:
+  - renamed the xgoja section to build-and-smoke-test,
+  - documented the Makefile target and its configurable variables,
+  - updated the future CI note and final checklist.
+- Updated `/home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/docs/README.md` to mention both vector validation targets.
+- Ran:
+  - `make test-vectors`
+  - `make xgoja-smoke-vectors`
+
+### Why
+
+Once a workflow target exists, docs should point to it instead of duplicating a long command sequence. This reduces drift and makes it easier for an intern or CI workflow author to run the same validation that maintainers run locally.
+
+### What worked
+
+Both validation commands passed:
+
+```text
+make test-vectors
+make xgoja-smoke-vectors
+```
+
+`make test-vectors` passed with `ok github.com/go-go-golems/goja-bleve/pkg`. The generated smoke target built `dist/goja-bleve-vectors`, then returned successful JSON for both vector commands.
+
+### What didn't work
+
+No validation failure occurred in this step.
+
+### What I learned
+
+The docs previously mixed generated-host validation with raw xgoja invocation. Replacing the raw path with the Makefile target makes the user-facing path shorter while still preserving enough direct command detail for troubleshooting.
+
+### What was tricky to build
+
+The tricky part was avoiding over-documenting the target as a CI guarantee. The current local xgoja spec still contains sibling `replace` paths, so the docs describe `make xgoja-smoke-vectors` as the local generated-host smoke path and keep CI language cautious until a clean-checkout spec or sibling checkout strategy exists.
+
+### What warrants a second pair of eyes
+
+- Whether README should keep any full raw xgoja build command, or whether the FAISS playbook is the only right place for that detail.
+- Whether the quickstart should mention that FAISS must already be installed before either vector target can pass.
+
+### What should be done in the future
+
+- Add the optional FAISS workflow.
+- Decide how to make generated xgoja smoke portable in CI.
+- Re-upload or refresh the reMarkable bundle if the ticket docs need to include implementation updates, not just the initial design.
+
+### Code review instructions
+
+- Review `README.md` and `docs/faiss-xgoja-playbook.md` first to ensure the target names are clear.
+- Validate the documented commands:
+  - `make test-vectors`
+  - `make xgoja-smoke-vectors`
+
+### Technical details
+
+The documentation now treats the two vector targets as distinct:
+
+```text
+make test-vectors
+  -> Go package tests under ./pkg with -tags=vectors
+
+make xgoja-smoke-vectors
+  -> xgoja build from cmd/goja-bleve/xgoja-vectors.yaml
+  -> generated dist/goja-bleve-vectors binary
+  -> vector knn and vector hybrid jsverbs
 ```

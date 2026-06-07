@@ -44,7 +44,13 @@ Vector search requires a host binary built with Bleve's vector tag and FAISS lin
 make test-vectors
 ```
 
-That target wraps the required `-tags=vectors`, `CGO_LDFLAGS`, and runtime rpath settings. For machine setup, troubleshooting, and xgoja vector builds, see [FAISS + goja-bleve + xgoja Playbook](faiss-xgoja-playbook.md).
+That target wraps the required `-tags=vectors`, `CGO_LDFLAGS`, and runtime rpath settings for package-level tests. To validate the generated xgoja vector host and embedded JavaScript smoke verbs, run:
+
+```bash
+make xgoja-smoke-vectors
+```
+
+For machine setup, troubleshooting, and xgoja vector builds, see [FAISS + goja-bleve + xgoja Playbook](faiss-xgoja-playbook.md).
 
 ```javascript
 const embedding = bleve.field().vector(4).similarity("cosine").optimizedFor("recall").build();

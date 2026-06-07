@@ -179,7 +179,7 @@ What each part does:
 
 If this command passes, the local FAISS installation is good enough for `goja-bleve`'s vector tests.
 
-## Build an xgoja vector host
+## Build and smoke-test an xgoja vector host
 
 The xgoja host must receive the same three categories of build configuration:
 
@@ -201,23 +201,27 @@ go:
     CGO_LDFLAGS: "-L/usr/local/lib -lfaiss_c -lfaiss -lstdc++ -lm"
 ```
 
-Build the vector-enabled xgoja binary:
+Use the repository target for the normal smoke path:
+
+```bash
+make xgoja-smoke-vectors
+```
+
+That target builds the vector-enabled xgoja binary from `cmd/goja-bleve/xgoja-vectors.yaml`, then runs the deterministic vector smoke verbs:
 
 ```bash
 cd cmd/goja-bleve
-GOWORK=off \
-go run github.com/go-go-golems/go-go-goja/cmd/xgoja@v0.8.3 build \
-  -f xgoja-vectors.yaml \
-  --work-dir /tmp/goja-bleve-vector-work \
-  --keep-work \
-  --xgoja-version v0.8.3
-```
-
-Then run the vector smoke verbs:
-
-```bash
 ./dist/goja-bleve-vectors vector knn --output json
 ./dist/goja-bleve-vectors vector hybrid --output json
+```
+
+The build step is configurable for local debugging or CI experiments:
+
+```bash
+make xgoja-smoke-vectors \
+  XGOJA_VERSION=v0.8.3 \
+  XGOJA_VECTOR_SPEC=xgoja-vectors.yaml \
+  XGOJA_VECTOR_WORK_DIR=/tmp/goja-bleve-vector-work
 ```
 
 If xgoja is invoked another way, make sure the generated Go package sees the same effective settings. A non-vector xgoja build will still load `require("bleve")`, but `bleve.vectorSupport` will be `false` and vector APIs will return explicit `-tags=vectors` errors.
@@ -377,7 +381,7 @@ Suggested improvements:
 2. Treat `docs/quickstart.md` as user-facing first-run material.
 3. Treat this playbook as maintainer/operator material for local machines and CI runners.
 4. Add a `docs/README.md` index if more documents are added.
-5. If CI ever grows a FAISS-enabled runner, add a dedicated vector job that runs `make test-vectors` after installing FAISS.
+5. If CI ever grows a FAISS-enabled runner, add a dedicated vector job that runs `make test-vectors` after installing FAISS, then optionally runs `make xgoja-smoke-vectors` once the xgoja spec is portable to a clean checkout.
 
 ## Final checklist
 
@@ -389,6 +393,7 @@ Use this checklist when preparing a machine for vector-enabled `goja-bleve` deve
 - [ ] FAISS C API headers exist under the chosen include directory.
 - [ ] `sudo ldconfig` was run after installing to `/usr/local/lib`.
 - [ ] `make test-vectors` passes.
+- [ ] `make xgoja-smoke-vectors` passes.
 - [ ] xgoja vector specs include `tags: [vectors]`.
 - [ ] xgoja vector specs include `CGO_LDFLAGS` with both `-lfaiss_c` and `-lfaiss`.
 - [ ] xgoja vector specs include an rpath or the runtime loader can otherwise find FAISS.
