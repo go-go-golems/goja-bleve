@@ -798,3 +798,112 @@ N/A
 ### Technical details
 
 Upload command used `remarquee upload bundle` with `--toc-depth 2` and `--non-interactive`.
+
+## Step 9: Fix GoReleaser and install targets for nested xgoja module
+
+I investigated the release failure reported after the branch started using the real `goja-bleve` binary name. The failing command was not caused by the package name inside the generated xgoja module. The root cause was that `cmd/goja-bleve` is its own nested Go module, so a root-module build target like `main: ./cmd/goja-bleve` asks the root module to build a package it does not contain.
+
+The fix is to make GoReleaser build from the nested module directory with `dir: cmd/goja-bleve` and `main: .`. I also updated the Makefile `install` target to build from inside the nested module instead of using `go build ./cmd/goja-bleve` from the root module.
+
+### Prompt Context
+
+**User prompt (verbatim):** "• building                                       binary=dist/linux_amd64/goja-bleve-linux_linux_amd64_v1/goja-bleve
+  ⨯ release failed after 0s                         
+    error=
+    │ build failed: exit status 1: main module (github.com/go-go-golems/goja-bleve) does not contain package github.com/go-go-golems/goja-bleve/cmd/goja-bleve
+    target=linux_amd64_v1
+make: *** [Makefile:61: goreleaser] Error 1
+
+We need to update the packakge name of the go.mod generated with xgoja maybe?"
+
+**Assistant interpretation:** Diagnose and fix the GoReleaser failure caused by trying to release the generated xgoja binary from the wrong module boundary.
+
+**Inferred user intent:** Make the release/pre-push GoReleaser snapshot work with the generated `cmd/goja-bleve` binary and real project naming.
+
+**Commit (code):** 45eb7f12369969aef8f89fc3ca2257b32fb28ab9 — "Fix release build for generated xgoja binary"
+
+### What I did
+
+- Confirmed the failing root-module build reproduces:
+  - `GOWORK=off go build ./cmd/goja-bleve`
+- Confirmed the nested-module build works:
+  - `cd cmd/goja-bleve && GOWORK=off go build .`
+- Updated `.goreleaser.yaml`:
+  - Linux build now uses `dir: cmd/goja-bleve`, `main: .`.
+  - Darwin build now uses `dir: cmd/goja-bleve`, `main: .`.
+- Updated `Makefile` `install` target:
+  - builds with `cd cmd/goja-bleve && GOWORK=off go build -o ../../dist/goja-bleve .`.
+- Ran:
+  - `make goreleaser`
+
+### Why
+
+The generated xgoja host lives in `cmd/goja-bleve`, which has its own `go.mod`. The root module cannot import or build packages under a nested module by path. GoReleaser must enter the nested module before invoking `go build`.
+
+### What worked
+
+`make goreleaser` passed after the change:
+
+```text
+building binary=dist/linux_amd64/goja-bleve-linux_linux_amd64_v1/goja-bleve
+archiving name=dist/linux_amd64/goja-bleve_0.0.2-next_linux_amd64.tar.gz
+creating package=goja-bleve format=rpm
+creating package=goja-bleve format=deb
+release succeeded after 13s
+```
+
+### What didn't work
+
+The root-module build is still invalid, as expected:
+
+```text
+GOWORK=off go build ./cmd/goja-bleve
+main module (github.com/go-go-golems/goja-bleve) does not contain package github.com/go-go-golems/goja-bleve/cmd/goja-bleve
+```
+
+This is not a generated-module-name problem; it is a nested-module build-context problem.
+
+### What I learned
+
+The `module example.com/generated/goja-bleve-vectors` line in `cmd/goja-bleve/go.mod` is not what makes GoReleaser fail. GoReleaser failed before entering that module. Once GoReleaser is told to use `dir: cmd/goja-bleve`, `main: .` builds successfully.
+
+### What was tricky to build
+
+The confusing symptom is that the generated module path looks suspicious, but changing it is not the necessary fix. The important invariant is the working directory for `go build`: root-module package paths stop at nested `go.mod` boundaries, while `cd cmd/goja-bleve && go build .` uses the generated module correctly.
+
+### What warrants a second pair of eyes
+
+- Whether xgoja should generate a stable module path such as `github.com/go-go-golems/goja-bleve/cmd/goja-bleve` instead of `example.com/generated/...` for aesthetics and traceability.
+- Whether the repository should remove the old `cmd/XXX` stub now that release packaging targets `cmd/goja-bleve`.
+- Whether `Makefile install` should fail early with a clearer error when `which goja-bleve` returns empty.
+
+### What should be done in the future
+
+- Consider cleaning up `cmd/XXX` in a separate focused commit.
+- Consider teaching xgoja specs to set the generated module path explicitly if that is supported or useful.
+
+### Code review instructions
+
+- Review `.goreleaser.yaml` build entries and ensure both Linux and Darwin builds use `dir: cmd/goja-bleve` and `main: .`.
+- Review `Makefile` `install` and ensure it builds from inside `cmd/goja-bleve`.
+- Validate with:
+  - `make goreleaser`
+
+### Technical details
+
+Correct release build shape:
+
+```yaml
+builds:
+  - id: goja-bleve-linux
+    dir: cmd/goja-bleve
+    main: .
+    binary: goja-bleve
+```
+
+Correct manual build shape:
+
+```bash
+cd cmd/goja-bleve
+GOWORK=off go build .
+```

@@ -17,7 +17,8 @@ builds:
       - CXX_linux_arm64=aarch64-linux-gnu-g++
       - 'CC={{ index .Env (print "CC_" .Os "_" .Arch) }}'
       - 'CXX={{ index .Env (print "CXX_" .Os "_" .Arch) }}'
-    main: ./cmd/goja-bleve
+    dir: cmd/goja-bleve
+    main: .
     binary: goja-bleve
     goos:
       - linux
@@ -29,7 +30,8 @@ builds:
   - id: goja-bleve-darwin
     env:
       - CGO_ENABLED=1
-    main: ./cmd/goja-bleve
+    dir: cmd/goja-bleve
+    main: .
     binary: goja-bleve
     goos:
       - darwin

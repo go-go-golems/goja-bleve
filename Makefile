@@ -86,5 +86,5 @@ bump-go-go-golems:
 
 GOJA_BLEVE_BINARY=$(shell which goja-bleve)
 install:
-	GOWORK=off go build -o ./dist/goja-bleve ./cmd/goja-bleve && \
-		cp ./dist/goja-bleve $(GOJA_BLEVE_BINARY)
+	cd cmd/goja-bleve && GOWORK=off go build -o ../../dist/goja-bleve . && \
+		cp ../../dist/goja-bleve $(GOJA_BLEVE_BINARY)
