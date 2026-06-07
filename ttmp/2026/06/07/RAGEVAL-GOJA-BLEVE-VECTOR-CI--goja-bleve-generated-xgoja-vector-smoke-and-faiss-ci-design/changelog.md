@@ -125,3 +125,14 @@ Step 11: Enabled docsctl publishing workflow for goja-bleve and added matching T
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/.github/workflows/publish-docs.yaml — Tag-triggered docsctl publishing workflow
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/ttmp/2026/06/07/RAGEVAL-GOJA-BLEVE-VECTOR-CI--goja-bleve-generated-xgoja-vector-smoke-and-faiss-ci-design/reference/01-investigation-diary.md — Step 11 docsctl rollout notes
 
+
+## 2026-06-07
+
+Step 12: ggg release preflight passed for docsctl workflow; Terraform plan was blocked by missing AWS backend credentials.
+
+### Related Files
+
+- /home/manuel/code/wesen/terraform/vault/github-actions/envs/k3s/main.tf — Terraform config validated but remote plan blocked by credentials
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/.github/workflows/publish-docs.yaml — Preflight-validated docsctl workflow
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/ttmp/2026/06/07/RAGEVAL-GOJA-BLEVE-VECTOR-CI--goja-bleve-generated-xgoja-vector-smoke-and-faiss-ci-design/reference/01-investigation-diary.md — Step 12 validation and blocker notes
+

@@ -1099,3 +1099,93 @@ goja-bleve = {
   workflow_ref  = "go-go-golems/goja-bleve/.github/workflows/publish-docs.yaml@refs/tags/v*"
 }
 ```
+
+## Step 12: Validate docsctl rollout and record Terraform plan blocker
+
+I ran the go-go-golems release preflight after adding the docs publishing workflow. The preflight passed, which means the repository-side docsctl wiring is structurally acceptable to the shared release tooling.
+
+I also attempted a Terraform plan for the Vault role, but the local environment did not have valid AWS credentials for the S3 backend. The Terraform configuration itself already validated; applying or planning against remote state needs credentials loaded before retrying.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 11)
+
+**Assistant interpretation:** Continue validating the docsctl rollout and identify whether the Terraform/Vault side can be planned or applied from this shell.
+
+**Inferred user intent:** Ensure both repository workflow configuration and Vault role configuration are ready for the release path.
+
+**Commit (code):** N/A — validation and failure diary only.
+
+### What I did
+
+- Ran:
+  - `ggg release preflight --repo . --output json`
+- Attempted:
+  - `terraform -chdir=vault/github-actions/envs/k3s plan -out=/tmp/goja-bleve-docsctl.tfplan`
+
+### Why
+
+The infra-tooling rollout playbook recommends `ggg release preflight` before release tags. Terraform planning would show the concrete Vault resources to be created before apply.
+
+### What worked
+
+Release preflight passed:
+
+```json
+{
+  "ok": true,
+  "repo": "/home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve",
+  "findings": null
+}
+```
+
+### What didn't work
+
+Terraform plan could not access the remote S3 backend because this shell lacked valid AWS credentials:
+
+```text
+Error: No valid credential sources found
+
+Please see https://developer.hashicorp.com/terraform/language/backend/s3
+for more information about providing credentials.
+
+Error: failed to refresh cached credentials, no EC2 IMDS role found,
+operation error ec2imds: GetMetadata, request canceled, context deadline
+exceeded
+```
+
+Terraform also emitted a backend warning:
+
+```text
+Warning: Deprecated Parameter
+The parameter "dynamodb_table" is deprecated. Use parameter "use_lockfile" instead.
+```
+
+### What I learned
+
+The repository-side docs publishing configuration is ready according to `ggg release preflight`, but the Vault role is not live until Terraform can be planned/applied with valid backend credentials.
+
+### What was tricky to build
+
+The validation split matters: `terraform validate` checks configuration shape using initialized provider metadata, while `terraform plan` needs remote backend credentials. Passing validate does not mean the Vault role has been created.
+
+### What warrants a second pair of eyes
+
+- Whether to apply the Terraform change manually after loading AWS/Vault credentials, or let the normal infra pipeline/operator apply it.
+- Whether the S3 backend `dynamodb_table` deprecation should be addressed in a separate Terraform maintenance change.
+
+### What should be done in the future
+
+- Load the correct AWS backend credentials and rerun:
+  - `terraform -chdir=/home/manuel/code/wesen/terraform/vault/github-actions/envs/k3s plan`
+  - `terraform -chdir=/home/manuel/code/wesen/terraform/vault/github-actions/envs/k3s apply`
+- After apply, tag a release and verify docs publication.
+
+### Code review instructions
+
+- Review `.github/workflows/publish-docs.yaml` with the preflight result in mind.
+- Review the Terraform diff and plan/apply it from an environment with remote backend credentials.
+
+### Technical details
+
+The Terraform role is committed but not applied in this session.
