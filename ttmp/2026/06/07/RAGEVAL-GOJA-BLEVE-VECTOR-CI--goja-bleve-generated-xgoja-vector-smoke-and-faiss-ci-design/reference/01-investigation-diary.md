@@ -907,3 +907,285 @@ Correct manual build shape:
 cd cmd/goja-bleve
 GOWORK=off go build .
 ```
+
+## Step 10: Fix invalid release workflow disabled reusable job
+
+I fixed the release workflow validation error caused by a disabled reusable `publish-docs` job. GitHub validates reusable-workflow permission requirements even when the job has `if: ${{ false }}`, so the workflow was invalid because the called workflow requested `id-token: write` while the caller allowed `id-token: none`.
+
+The fix was to remove the disabled `uses:` job from the active workflow and leave it as explanatory comments. This keeps the release workflow valid without granting OIDC permissions to all release runs just to satisfy a disabled template.
+
+### Prompt Context
+
+**User prompt (verbatim):** "1 error
+Invalid workflow file: .github/workflows/release.yaml#L80
+The workflow is not valid. .github/workflows/release.yaml (Line: 80, Col: 3): Error calling workflow 'go-go-golems/infra-tooling/.github/workflows/publish-docsctl.yml@main'. The workflow is requesting 'id-token: write', but is only allowed 'id-token: none'."
+
+**Assistant interpretation:** Diagnose and fix the GitHub Actions workflow validation error in `release.yaml`.
+
+**Inferred user intent:** Make the release workflow valid without accidentally enabling the disabled docs publishing path or granting unnecessary permissions.
+
+**Commit (code):** b75d00eae8db0dfa00c2ffb4e41cee7fa8a93ad6 — "Fix release workflow docs publishing template"
+
+### What I did
+
+- Edited `/home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/.github/workflows/release.yaml`.
+- Removed the active disabled `publish-docs` reusable-workflow job.
+- Kept a commented template explaining how to re-enable docs publishing later.
+- Added a warning that GitHub validates reusable workflow permissions even when a job is guarded with `if: ${{ false }}`.
+- Parsed the workflow locally with Ruby YAML and confirmed active jobs are now only:
+  - `goreleaser-linux`
+  - `goreleaser-darwin`
+  - `goreleaser-merge`
+
+### Why
+
+Adding `id-token: write` would also make the workflow valid, but it would grant OIDC permissions for a job that is intentionally disabled. Removing the disabled reusable job is safer and more explicit.
+
+### What worked
+
+Local YAML parsing succeeded, and the active job list no longer includes `publish-docs`:
+
+```text
+["goreleaser-linux", "goreleaser-darwin", "goreleaser-merge"]
+```
+
+### What didn't work
+
+No remote GitHub validation was run in this step.
+
+### What I learned
+
+GitHub Actions validates called reusable workflow permissions at workflow-parse time. An `if: false` guard prevents execution but does not prevent reusable-workflow permission validation.
+
+### What was tricky to build
+
+The tricky part is that the workflow looked disabled, but GitHub still rejected it. The safe pattern is not to keep disabled `uses:` jobs around as templates unless the caller grants every permission the reusable workflow requests.
+
+### What warrants a second pair of eyes
+
+- Whether the commented template should be moved to a separate documentation file instead of living in `release.yaml`.
+- Whether future docs publishing should be enabled in this repository at all.
+
+### What should be done in the future
+
+If docs publishing is enabled later, add a real `publish-docs` job and explicitly grant its required permissions in the top-level or job-level `permissions` block.
+
+### Code review instructions
+
+- Review `.github/workflows/release.yaml` around the former `publish-docs` block.
+- Confirm there is no active reusable `publish-docs` job unless the required permissions are also granted.
+
+### Technical details
+
+The invalid pattern was:
+
+```yaml
+publish-docs:
+  if: ${{ false && startsWith(github.ref, 'refs/tags/v') }}
+  uses: go-go-golems/infra-tooling/.github/workflows/publish-docsctl.yml@main
+```
+
+The corrected workflow keeps only comments and no active reusable job.
+
+## Step 11: Enable docsctl publishing for goja-bleve
+
+I followed the infra-tooling docsctl rollout playbook and enabled tag-triggered docs publishing for `goja-bleve`. Because the generated CLI is a nested xgoja module, the export command uses a subshell that enters `cmd/goja-bleve` but writes the SQLite database back to the repository-root `.docsctl` directory.
+
+I also added the matching Vault/Terraform publisher entry in `~/code/wesen/terraform`. The Vault role will be `docsctl-goja-bleve-publisher`, scoped to the `go-go-golems/goja-bleve` repository, numeric repository ID `1257732352`, tag pushes, and the exact `.github/workflows/publish-docs.yaml` workflow path.
+
+### Prompt Context
+
+**User prompt (verbatim):** "enable docs publishiing, i think that requires a vault policy through terraform in ~/code/wesen/terraform/ ?"
+
+**Assistant interpretation:** Turn on docsctl publishing for goja-bleve and add the required Vault/Terraform publisher role.
+
+**Inferred user intent:** Make release tags publish goja-bleve Glazed help docs to docs.yolo.scapegoat.dev using the standard infra-tooling reusable workflow and Vault OIDC model.
+
+**Commit (code):** 90c63e3343ed4441a717ab9617a6503b5e420af0 — "Enable docsctl publishing"; Terraform: 90ecc70802972893683c5a0e994b4bf2be2e929b — "Add goja-bleve docsctl publisher role"
+
+### What I did
+
+- Read the infra-tooling rollout guide:
+  - `/home/manuel/code/wesen/go-go-golems/infra-tooling/docs/go-go-golems/playbooks/docsctl-docs-publishing-rollout-playbook.md`
+- Verified the nested xgoja command can export help:
+  - `mkdir -p .docsctl && (cd cmd/goja-bleve && GOWORK=off go run . help export --format sqlite --output-path ../../.docsctl/help.sqlite)`
+- Validated the generated help DB:
+  - `docsctl validate --file .docsctl/help.sqlite --package goja-bleve --version v0.0.0-local`
+- Added `/home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/.github/workflows/publish-docs.yaml`.
+- Added a `goja-bleve` docsctl publisher entry to:
+  - `/home/manuel/code/wesen/terraform/vault/github-actions/envs/k3s/main.tf`
+- Ran:
+  - `terraform fmt vault/github-actions/envs/k3s/main.tf`
+  - `terraform -chdir=vault/github-actions/envs/k3s validate`
+
+### Why
+
+The release workflow should not carry an inactive reusable docs job, but the package still needs docs publishing on release tags. The rollout guide recommends a separate `.github/workflows/publish-docs.yaml` when docs can be generated from source independently of release artifacts. That fits `goja-bleve` because `help export` runs directly from the generated xgoja source module.
+
+### What worked
+
+Local export and validation passed:
+
+```text
+OK: .../.docsctl/help.sqlite is a valid Glazed help database for goja-bleve@v0.0.0-local (2 sections, 2 slugs)
+```
+
+Terraform validation passed:
+
+```text
+Success! The configuration is valid.
+```
+
+### What didn't work
+
+No command failure occurred in this step. I did not run `terraform apply`; the Vault role is only committed as Terraform configuration until applied.
+
+### What I learned
+
+The nested-module export command from the rollout guide is exactly the right pattern for xgoja-generated CLIs:
+
+```text
+mkdir -p .docsctl && (cd cmd/goja-bleve && GOWORK=off go run . help export --format sqlite --output-path ../../.docsctl/help.sqlite)
+```
+
+It keeps the reusable workflow's `sqlite_path` relative to the repository root while still building the nested command module correctly.
+
+### What was tricky to build
+
+The tricky part was choosing the workflow path bound in Vault. Since this uses a separate docs workflow, Terraform must bind `workflow_ref` to `go-go-golems/goja-bleve/.github/workflows/publish-docs.yaml@refs/tags/v*`, not the release workflow. If the workflow path changes later, the Vault role must be updated too.
+
+### What warrants a second pair of eyes
+
+- Whether the public package name should be exactly `goja-bleve`.
+- Whether publishing only two help sections is useful enough before adding richer help entries.
+- Whether the Terraform role should be applied immediately or merged first and applied through the normal infra process.
+
+### What should be done in the future
+
+- Apply the Terraform change so `docsctl-goja-bleve-publisher` exists in Vault.
+- After the workflow reaches the default branch, push a release tag and verify docs at `https://docs.yolo.scapegoat.dev/api/packages`.
+- Add richer Glazed help entries if the published docs are too sparse.
+
+### Code review instructions
+
+- Review `.github/workflows/publish-docs.yaml` and confirm `id-token: write` is scoped to `publish-docs` only.
+- Review the Terraform `docsctl_publishers.goja-bleve` entry and confirm the numeric repository ID is `1257732352`.
+- Validate with:
+  - `mkdir -p .docsctl && (cd cmd/goja-bleve && GOWORK=off go run . help export --format sqlite --output-path ../../.docsctl/help.sqlite)`
+  - `docsctl validate --file .docsctl/help.sqlite --package goja-bleve --version v0.0.0-local`
+  - `terraform -chdir=/home/manuel/code/wesen/terraform/vault/github-actions/envs/k3s validate`
+
+### Technical details
+
+The docs workflow calls:
+
+```yaml
+uses: go-go-golems/infra-tooling/.github/workflows/publish-docsctl.yml@main
+with:
+  package_name: goja-bleve
+  package_version: ${{ github.ref_name }}
+  export_command: mkdir -p .docsctl && (cd cmd/goja-bleve && GOWORK=off go run . help export --format sqlite --output-path ../../.docsctl/help.sqlite)
+  vault_role: docsctl-goja-bleve-publisher
+  vault_token_role: docsctl-goja-bleve-publisher
+```
+
+The Terraform docsctl publisher identity is:
+
+```hcl
+goja-bleve = {
+  package_name  = "goja-bleve"
+  repository    = "go-go-golems/goja-bleve"
+  repository_id = "1257732352"
+  workflow_ref  = "go-go-golems/goja-bleve/.github/workflows/publish-docs.yaml@refs/tags/v*"
+}
+```
+
+## Step 12: Validate docsctl rollout and record Terraform plan blocker
+
+I ran the go-go-golems release preflight after adding the docs publishing workflow. The preflight passed, which means the repository-side docsctl wiring is structurally acceptable to the shared release tooling.
+
+I also attempted a Terraform plan for the Vault role, but the local environment did not have valid AWS credentials for the S3 backend. The Terraform configuration itself already validated; applying or planning against remote state needs credentials loaded before retrying.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 11)
+
+**Assistant interpretation:** Continue validating the docsctl rollout and identify whether the Terraform/Vault side can be planned or applied from this shell.
+
+**Inferred user intent:** Ensure both repository workflow configuration and Vault role configuration are ready for the release path.
+
+**Commit (code):** N/A — validation and failure diary only.
+
+### What I did
+
+- Ran:
+  - `ggg release preflight --repo . --output json`
+- Attempted:
+  - `terraform -chdir=vault/github-actions/envs/k3s plan -out=/tmp/goja-bleve-docsctl.tfplan`
+
+### Why
+
+The infra-tooling rollout playbook recommends `ggg release preflight` before release tags. Terraform planning would show the concrete Vault resources to be created before apply.
+
+### What worked
+
+Release preflight passed:
+
+```json
+{
+  "ok": true,
+  "repo": "/home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve",
+  "findings": null
+}
+```
+
+### What didn't work
+
+Terraform plan could not access the remote S3 backend because this shell lacked valid AWS credentials:
+
+```text
+Error: No valid credential sources found
+
+Please see https://developer.hashicorp.com/terraform/language/backend/s3
+for more information about providing credentials.
+
+Error: failed to refresh cached credentials, no EC2 IMDS role found,
+operation error ec2imds: GetMetadata, request canceled, context deadline
+exceeded
+```
+
+Terraform also emitted a backend warning:
+
+```text
+Warning: Deprecated Parameter
+The parameter "dynamodb_table" is deprecated. Use parameter "use_lockfile" instead.
+```
+
+### What I learned
+
+The repository-side docs publishing configuration is ready according to `ggg release preflight`, but the Vault role is not live until Terraform can be planned/applied with valid backend credentials.
+
+### What was tricky to build
+
+The validation split matters: `terraform validate` checks configuration shape using initialized provider metadata, while `terraform plan` needs remote backend credentials. Passing validate does not mean the Vault role has been created.
+
+### What warrants a second pair of eyes
+
+- Whether to apply the Terraform change manually after loading AWS/Vault credentials, or let the normal infra pipeline/operator apply it.
+- Whether the S3 backend `dynamodb_table` deprecation should be addressed in a separate Terraform maintenance change.
+
+### What should be done in the future
+
+- Load the correct AWS backend credentials and rerun:
+  - `terraform -chdir=/home/manuel/code/wesen/terraform/vault/github-actions/envs/k3s plan`
+  - `terraform -chdir=/home/manuel/code/wesen/terraform/vault/github-actions/envs/k3s apply`
+- After apply, tag a release and verify docs publication.
+
+### Code review instructions
+
+- Review `.github/workflows/publish-docs.yaml` with the preflight result in mind.
+- Review the Terraform diff and plan/apply it from an environment with remote backend credentials.
+
+### Technical details
+
+The Terraform role is committed but not applied in this session.

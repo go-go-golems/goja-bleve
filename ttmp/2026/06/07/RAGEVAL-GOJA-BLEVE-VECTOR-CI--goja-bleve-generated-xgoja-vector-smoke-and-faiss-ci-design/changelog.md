@@ -104,3 +104,35 @@ Step 9: Fixed GoReleaser and install targets to build the generated xgoja host f
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/Makefile — Install target now builds from inside cmd/goja-bleve
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/ttmp/2026/06/07/RAGEVAL-GOJA-BLEVE-VECTOR-CI--goja-bleve-generated-xgoja-vector-smoke-and-faiss-ci-design/reference/01-investigation-diary.md — Step 9 release-plumbing diagnosis
 
+
+## 2026-06-07
+
+Step 10: Removed disabled publish-docs reusable job from release workflow comments-only template so GitHub no longer validates id-token permissions for an inactive job.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/.github/workflows/release.yaml — Release workflow validation fix
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/ttmp/2026/06/07/RAGEVAL-GOJA-BLEVE-VECTOR-CI--goja-bleve-generated-xgoja-vector-smoke-and-faiss-ci-design/reference/01-investigation-diary.md — Step 10 workflow diagnosis
+
+
+## 2026-06-07
+
+Step 11: Enabled docsctl publishing workflow for goja-bleve and added matching Terraform/Vault docsctl publisher entry.
+
+### Related Files
+
+- /home/manuel/code/wesen/terraform/vault/github-actions/envs/k3s/main.tf — Vault docsctl publisher role for goja-bleve
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/.github/workflows/publish-docs.yaml — Tag-triggered docsctl publishing workflow
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/ttmp/2026/06/07/RAGEVAL-GOJA-BLEVE-VECTOR-CI--goja-bleve-generated-xgoja-vector-smoke-and-faiss-ci-design/reference/01-investigation-diary.md — Step 11 docsctl rollout notes
+
+
+## 2026-06-07
+
+Step 12: ggg release preflight passed for docsctl workflow; Terraform plan was blocked by missing AWS backend credentials.
+
+### Related Files
+
+- /home/manuel/code/wesen/terraform/vault/github-actions/envs/k3s/main.tf — Terraform config validated but remote plan blocked by credentials
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/.github/workflows/publish-docs.yaml — Preflight-validated docsctl workflow
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/ttmp/2026/06/07/RAGEVAL-GOJA-BLEVE-VECTOR-CI--goja-bleve-generated-xgoja-vector-smoke-and-faiss-ci-design/reference/01-investigation-diary.md — Step 12 validation and blocker notes
+
