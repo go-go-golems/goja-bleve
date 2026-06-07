@@ -1,6 +1,6 @@
 module github.com/go-go-golems/goja-bleve
 
-go 1.26.1
+go 1.26.4
 
 require (
 	github.com/blevesearch/bleve/v2 v2.6.0
