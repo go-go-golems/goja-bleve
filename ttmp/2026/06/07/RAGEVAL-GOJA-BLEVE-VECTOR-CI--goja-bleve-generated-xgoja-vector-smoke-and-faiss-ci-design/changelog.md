@@ -114,3 +114,14 @@ Step 10: Removed disabled publish-docs reusable job from release workflow commen
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/.github/workflows/release.yaml — Release workflow validation fix
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/ttmp/2026/06/07/RAGEVAL-GOJA-BLEVE-VECTOR-CI--goja-bleve-generated-xgoja-vector-smoke-and-faiss-ci-design/reference/01-investigation-diary.md — Step 10 workflow diagnosis
 
+
+## 2026-06-07
+
+Step 11: Enabled docsctl publishing workflow for goja-bleve and added matching Terraform/Vault docsctl publisher entry.
+
+### Related Files
+
+- /home/manuel/code/wesen/terraform/vault/github-actions/envs/k3s/main.tf — Vault docsctl publisher role for goja-bleve
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/.github/workflows/publish-docs.yaml — Tag-triggered docsctl publishing workflow
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/ttmp/2026/06/07/RAGEVAL-GOJA-BLEVE-VECTOR-CI--goja-bleve-generated-xgoja-vector-smoke-and-faiss-ci-design/reference/01-investigation-diary.md — Step 11 docsctl rollout notes
+

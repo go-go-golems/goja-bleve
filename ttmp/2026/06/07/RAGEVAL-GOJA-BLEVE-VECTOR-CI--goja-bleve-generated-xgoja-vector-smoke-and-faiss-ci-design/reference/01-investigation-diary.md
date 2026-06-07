@@ -986,3 +986,116 @@ publish-docs:
 ```
 
 The corrected workflow keeps only comments and no active reusable job.
+
+## Step 11: Enable docsctl publishing for goja-bleve
+
+I followed the infra-tooling docsctl rollout playbook and enabled tag-triggered docs publishing for `goja-bleve`. Because the generated CLI is a nested xgoja module, the export command uses a subshell that enters `cmd/goja-bleve` but writes the SQLite database back to the repository-root `.docsctl` directory.
+
+I also added the matching Vault/Terraform publisher entry in `~/code/wesen/terraform`. The Vault role will be `docsctl-goja-bleve-publisher`, scoped to the `go-go-golems/goja-bleve` repository, numeric repository ID `1257732352`, tag pushes, and the exact `.github/workflows/publish-docs.yaml` workflow path.
+
+### Prompt Context
+
+**User prompt (verbatim):** "enable docs publishiing, i think that requires a vault policy through terraform in ~/code/wesen/terraform/ ?"
+
+**Assistant interpretation:** Turn on docsctl publishing for goja-bleve and add the required Vault/Terraform publisher role.
+
+**Inferred user intent:** Make release tags publish goja-bleve Glazed help docs to docs.yolo.scapegoat.dev using the standard infra-tooling reusable workflow and Vault OIDC model.
+
+**Commit (code):** TBD — pending docs publishing workflow and Terraform commits.
+
+### What I did
+
+- Read the infra-tooling rollout guide:
+  - `/home/manuel/code/wesen/go-go-golems/infra-tooling/docs/go-go-golems/playbooks/docsctl-docs-publishing-rollout-playbook.md`
+- Verified the nested xgoja command can export help:
+  - `mkdir -p .docsctl && (cd cmd/goja-bleve && GOWORK=off go run . help export --format sqlite --output-path ../../.docsctl/help.sqlite)`
+- Validated the generated help DB:
+  - `docsctl validate --file .docsctl/help.sqlite --package goja-bleve --version v0.0.0-local`
+- Added `/home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/.github/workflows/publish-docs.yaml`.
+- Added a `goja-bleve` docsctl publisher entry to:
+  - `/home/manuel/code/wesen/terraform/vault/github-actions/envs/k3s/main.tf`
+- Ran:
+  - `terraform fmt vault/github-actions/envs/k3s/main.tf`
+  - `terraform -chdir=vault/github-actions/envs/k3s validate`
+
+### Why
+
+The release workflow should not carry an inactive reusable docs job, but the package still needs docs publishing on release tags. The rollout guide recommends a separate `.github/workflows/publish-docs.yaml` when docs can be generated from source independently of release artifacts. That fits `goja-bleve` because `help export` runs directly from the generated xgoja source module.
+
+### What worked
+
+Local export and validation passed:
+
+```text
+OK: .../.docsctl/help.sqlite is a valid Glazed help database for goja-bleve@v0.0.0-local (2 sections, 2 slugs)
+```
+
+Terraform validation passed:
+
+```text
+Success! The configuration is valid.
+```
+
+### What didn't work
+
+No command failure occurred in this step. I did not run `terraform apply`; the Vault role is only committed as Terraform configuration until applied.
+
+### What I learned
+
+The nested-module export command from the rollout guide is exactly the right pattern for xgoja-generated CLIs:
+
+```text
+mkdir -p .docsctl && (cd cmd/goja-bleve && GOWORK=off go run . help export --format sqlite --output-path ../../.docsctl/help.sqlite)
+```
+
+It keeps the reusable workflow's `sqlite_path` relative to the repository root while still building the nested command module correctly.
+
+### What was tricky to build
+
+The tricky part was choosing the workflow path bound in Vault. Since this uses a separate docs workflow, Terraform must bind `workflow_ref` to `go-go-golems/goja-bleve/.github/workflows/publish-docs.yaml@refs/tags/v*`, not the release workflow. If the workflow path changes later, the Vault role must be updated too.
+
+### What warrants a second pair of eyes
+
+- Whether the public package name should be exactly `goja-bleve`.
+- Whether publishing only two help sections is useful enough before adding richer help entries.
+- Whether the Terraform role should be applied immediately or merged first and applied through the normal infra process.
+
+### What should be done in the future
+
+- Apply the Terraform change so `docsctl-goja-bleve-publisher` exists in Vault.
+- After the workflow reaches the default branch, push a release tag and verify docs at `https://docs.yolo.scapegoat.dev/api/packages`.
+- Add richer Glazed help entries if the published docs are too sparse.
+
+### Code review instructions
+
+- Review `.github/workflows/publish-docs.yaml` and confirm `id-token: write` is scoped to `publish-docs` only.
+- Review the Terraform `docsctl_publishers.goja-bleve` entry and confirm the numeric repository ID is `1257732352`.
+- Validate with:
+  - `mkdir -p .docsctl && (cd cmd/goja-bleve && GOWORK=off go run . help export --format sqlite --output-path ../../.docsctl/help.sqlite)`
+  - `docsctl validate --file .docsctl/help.sqlite --package goja-bleve --version v0.0.0-local`
+  - `terraform -chdir=/home/manuel/code/wesen/terraform/vault/github-actions/envs/k3s validate`
+
+### Technical details
+
+The docs workflow calls:
+
+```yaml
+uses: go-go-golems/infra-tooling/.github/workflows/publish-docsctl.yml@main
+with:
+  package_name: goja-bleve
+  package_version: ${{ github.ref_name }}
+  export_command: mkdir -p .docsctl && (cd cmd/goja-bleve && GOWORK=off go run . help export --format sqlite --output-path ../../.docsctl/help.sqlite)
+  vault_role: docsctl-goja-bleve-publisher
+  vault_token_role: docsctl-goja-bleve-publisher
+```
+
+The Terraform docsctl publisher identity is:
+
+```hcl
+goja-bleve = {
+  package_name  = "goja-bleve"
+  repository    = "go-go-golems/goja-bleve"
+  repository_id = "1257732352"
+  workflow_ref  = "go-go-golems/goja-bleve/.github/workflows/publish-docs.yaml@refs/tags/v*"
+}
+```
