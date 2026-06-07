@@ -166,3 +166,13 @@ Step 15: Fixed FAISS header copy path to install include/faiss after hosted veri
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/.github/workflows/vector-faiss.yml — Copies FAISS install-style include tree
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/ttmp/2026/06/07/RAGEVAL-GOJA-BLEVE-VECTOR-CI--goja-bleve-generated-xgoja-vector-smoke-and-faiss-ci-design/reference/01-investigation-diary.md — Step 15 header layout diagnosis
 
+
+## 2026-06-07
+
+Step 16: Fixed FAISS header install for pinned fff814d layout by copying top-level c_api into /usr/local/include/faiss/c_api.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/.github/workflows/vector-faiss.yml — Copies source faiss headers and top-level c_api headers
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/ttmp/2026/06/07/RAGEVAL-GOJA-BLEVE-VECTOR-CI--goja-bleve-generated-xgoja-vector-smoke-and-faiss-ci-design/reference/01-investigation-diary.md — Step 16 pinned FAISS layout diagnosis
+
