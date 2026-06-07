@@ -1290,3 +1290,87 @@ The tricky Terraform part was avoiding unrelated drift. A full plan wanted to cr
 ### Technical details
 
 The first hosted failure happened before any Go vector tests ran. It was a native dependency issue in FAISS CMake configuration, not a goja-bleve or xgoja failure.
+
+## Step 14: Avoid FAISS install target building failing test sources
+
+After adding `libgflags-dev`, the hosted FAISS workflow progressed past CMake configuration and built the `faiss` and `faiss_c` targets. It then failed during `sudo make -C build install` because the install target pulled in FAISS test targets, and one test source failed to compile on the Ubuntu runner's C++ platform due to an integer type mismatch.
+
+The workflow only needs headers plus `libfaiss.so` and `libfaiss_c.so`; it does not need FAISS tests or perf binaries. I changed the workflow to copy the source `faiss/` header tree and the two built shared libraries directly instead of invoking the broad install target.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 13)
+
+**Assistant interpretation:** Continue fixing the hosted Vector FAISS Smoke workflow until it reaches the Go vector tests and generated xgoja smoke.
+
+**Inferred user intent:** Make the newly merged optional FAISS workflow actually pass on GitHub-hosted runners.
+
+**Commit (code):** TBD — pending workflow install-step fix commit.
+
+### What I did
+
+- Merged the `libgflags-dev` fix PR.
+- Reran `Vector FAISS Smoke` on `main`.
+- Inspected the second hosted failure.
+- Updated `.github/workflows/vector-faiss.yml`:
+  - removed `sudo make -C build install`,
+  - added `sudo mkdir -p /usr/local/include /usr/local/lib`,
+  - added `sudo cp -a faiss /usr/local/include/`,
+  - copied `build/faiss/libfaiss.so` and `build/c_api/libfaiss_c.so` directly.
+
+### Why
+
+`make install` is too broad for this workflow because it can build targets outside the `faiss` and `faiss_c` artifacts needed by Bleve/go-faiss. Directly copying headers and libraries keeps CI focused on the required install surface.
+
+### What worked
+
+The second hosted workflow run built `faiss` and `faiss_c` successfully before failing in test compilation pulled in by install.
+
+### What didn't work
+
+The install step failed while compiling `tests/test_hamming.cpp`:
+
+```text
+/tmp/faiss/tests/test_hamming.cpp:304:36: error: invalid conversion from ‘long long int*’ to ‘faiss::HeapArray<faiss::CMax<int, long int> >::TI*’ {aka ‘long int*’} [-fpermissive]
+```
+
+Run:
+
+```text
+https://github.com/go-go-golems/goja-bleve/actions/runs/27095615551
+```
+
+### What I learned
+
+Building specific targets does not guarantee `make install` will remain limited to those targets. For this CI job, copying the required files is simpler and avoids unrelated FAISS test-build portability issues.
+
+### What was tricky to build
+
+The symptom appeared after successful `faiss` and `faiss_c` builds, which made the failure look surprising. The key was noticing the failing target was `tests/CMakeFiles/faiss_test.dir/...`, not `faiss` or `faiss_c`.
+
+### What warrants a second pair of eyes
+
+- Whether copying the full `faiss/` source tree into `/usr/local/include/faiss` is too broad, or whether it should copy headers only with `find faiss -name '*.h' -o -name '*.hpp'`.
+- Whether CMake has a reliable install component for only headers/libs in this fork.
+
+### What should be done in the future
+
+- Push this workflow fix and rerun `Vector FAISS Smoke` again.
+
+### Code review instructions
+
+- Review `.github/workflows/vector-faiss.yml` and confirm the workflow no longer invokes `make install`.
+- Confirm the verification step still checks:
+  - `/usr/local/include/faiss/c_api/IndexBinary_c_ex.h`
+  - `/usr/local/lib/libfaiss.so`
+  - `/usr/local/lib/libfaiss_c.so`
+
+### Technical details
+
+Required files for goja-bleve vector CI:
+
+```text
+/usr/local/include/faiss/c_api/IndexBinary_c_ex.h
+/usr/local/lib/libfaiss.so
+/usr/local/lib/libfaiss_c.so
+```
