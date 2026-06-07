@@ -156,3 +156,13 @@ Step 14: Replaced FAISS make install with direct header/library copy after hoste
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/.github/workflows/vector-faiss.yml — Copies FAISS headers/libs directly instead of invoking broad install target
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/ttmp/2026/06/07/RAGEVAL-GOJA-BLEVE-VECTOR-CI--goja-bleve-generated-xgoja-vector-smoke-and-faiss-ci-design/reference/01-investigation-diary.md — Step 14 hosted workflow failure analysis
 
+
+## 2026-06-07
+
+Step 15: Fixed FAISS header copy path to install include/faiss after hosted verification found IndexBinary_c_ex.h missing.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/.github/workflows/vector-faiss.yml — Copies FAISS install-style include tree
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/ttmp/2026/06/07/RAGEVAL-GOJA-BLEVE-VECTOR-CI--goja-bleve-generated-xgoja-vector-smoke-and-faiss-ci-design/reference/01-investigation-diary.md — Step 15 header layout diagnosis
+

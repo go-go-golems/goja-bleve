@@ -1374,3 +1374,86 @@ Required files for goja-bleve vector CI:
 /usr/local/lib/libfaiss.so
 /usr/local/lib/libfaiss_c.so
 ```
+
+## Step 15: Copy FAISS installed include tree instead of source implementation tree
+
+After skipping `make install`, the hosted workflow built the FAISS shared libraries successfully but failed the verification step because `/usr/local/include/faiss/c_api/IndexBinary_c_ex.h` was missing. The workflow copied the source implementation directory `faiss/`, but the header layout expected by Bleve/go-faiss is under the repository's `include/faiss/` tree.
+
+I changed the workflow to copy `include/faiss` into `/usr/local/include/`. That should produce `/usr/local/include/faiss/c_api/IndexBinary_c_ex.h` without invoking the broad CMake install target.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 13)
+
+**Assistant interpretation:** Continue tightening the FAISS workflow after each hosted-runner failure until the install layout matches the local playbook.
+
+**Inferred user intent:** Make the optional vector workflow pass end-to-end and leave exact failure notes for future maintenance.
+
+**Commit (code):** TBD — pending FAISS header-copy fix commit.
+
+### What I did
+
+- Merged the no-`make install` workflow PR.
+- Reran `Vector FAISS Smoke` on `main`.
+- Inspected the verification failure.
+- Changed `.github/workflows/vector-faiss.yml` from:
+  - `sudo cp -a faiss /usr/local/include/`
+- to:
+  - `sudo cp -a include/faiss /usr/local/include/`
+
+### Why
+
+Bleve/go-faiss includes headers as `faiss/c_api/...`. The FAISS fork's install-style include tree is `include/faiss`, not the source implementation directory copied in the previous fix.
+
+### What worked
+
+The hosted workflow reached the verification step, meaning CMake configure and both required shared-library builds succeeded. The library verification showed:
+
+```text
+/usr/local/lib/libfaiss.so
+/usr/local/lib/libfaiss_c.so
+```
+
+### What didn't work
+
+The header verification failed:
+
+```text
+ls: cannot access '/usr/local/include/faiss/c_api/IndexBinary_c_ex.h': No such file or directory
+```
+
+Run:
+
+```text
+https://github.com/go-go-golems/goja-bleve/actions/runs/27095789363
+```
+
+### What I learned
+
+The FAISS fork has a separate install include tree. Copying the implementation source directory is not equivalent to installing headers.
+
+### What was tricky to build
+
+The directory names are easy to confuse because the repository has both `faiss/` and `include/faiss/`. The verification step did its job by checking the exact header path that CGO expects.
+
+### What warrants a second pair of eyes
+
+- Whether `include/faiss` contains every header needed by go-faiss, or whether some generated/config headers should also be copied from the build directory.
+
+### What should be done in the future
+
+- Push this header-copy fix and rerun `Vector FAISS Smoke`.
+
+### Code review instructions
+
+- Confirm `.github/workflows/vector-faiss.yml` copies `include/faiss` and still verifies `IndexBinary_c_ex.h`.
+
+### Technical details
+
+Expected runner layout after this fix:
+
+```text
+/usr/local/include/faiss/c_api/IndexBinary_c_ex.h
+/usr/local/lib/libfaiss.so
+/usr/local/lib/libfaiss_c.so
+```
