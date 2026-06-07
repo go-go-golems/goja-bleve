@@ -66,3 +66,12 @@ Step 5: Added xgoja-vectors.ci.yaml and enabled generated xgoja vector smoke in 
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/cmd/goja-bleve/xgoja-vectors.ci.yaml — Clean-checkout xgoja vector spec for CI
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/docs/faiss-xgoja-playbook.md — Documents local vs CI xgoja vector specs
 
+
+## 2026-06-07
+
+Step 6: Final local validation passed for make test-vectors, CI-spec generated xgoja smoke, and GOWORK=off go test ./....
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/ttmp/2026/06/07/RAGEVAL-GOJA-BLEVE-VECTOR-CI--goja-bleve-generated-xgoja-vector-smoke-and-faiss-ci-design/reference/01-investigation-diary.md — Final validation and handoff notes
+

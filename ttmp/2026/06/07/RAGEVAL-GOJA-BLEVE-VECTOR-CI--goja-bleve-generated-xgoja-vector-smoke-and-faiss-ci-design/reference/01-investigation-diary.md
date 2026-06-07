@@ -435,7 +435,7 @@ After adding the spec, I changed the FAISS workflow so generated xgoja smoke run
 
 **Inferred user intent:** Close the gap between local generated-host validation and CI validation so the new workflow covers both requested hardening items.
 
-**Commit (code):** TBD — pending CI-spec commit.
+**Commit (code):** 0b1661b4345b64ee4575688d3e412e2228c82f25 — "Enable generated vector smoke in FAISS workflow"
 
 ### What I did
 
@@ -528,4 +528,110 @@ geppetto provider
 
 go-go-goja core/host providers
   -> released module v0.8.3
+```
+
+
+## Step 6: Final local validation and handoff notes
+
+I ran the final local validation set after the Makefile target, documentation updates, workflow, and CI-specific xgoja spec were committed. The repository now has a local generated xgoja vector smoke path and an optional GitHub Actions workflow that should validate both package vector tests and generated vector smoke after building FAISS.
+
+This step did not change runtime behavior. It records the commands that passed and the remaining caveat: the new GitHub Actions workflow still needs to be executed on GitHub to prove the Ubuntu runner's FAISS source-build path.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 2)
+
+**Assistant interpretation:** Finish this implementation slice with validation, diary updates, and a clear continuation point.
+
+**Inferred user intent:** Leave the branch in a reviewable state with enough evidence for the next person to understand what was changed and what remains unproven.
+
+**Commit (code):** N/A — validation and diary handoff only.
+
+### What I did
+
+- Ran the vector package test target:
+  - `make test-vectors`
+- Ran generated xgoja vector smoke using the CI spec:
+  - `make xgoja-smoke-vectors XGOJA_VECTOR_SPEC=xgoja-vectors.ci.yaml XGOJA_VECTOR_WORK_DIR=/tmp/goja-bleve-vector-ci-spec-work`
+- Ran the default package test suite:
+  - `GOWORK=off go test ./...`
+- Checked diary commit references and updated Step 5 with its commit hash.
+
+### Why
+
+The final validation should cover the three important paths touched by this work: vector-tag package tests, generated xgoja vector smoke, and the default non-vector package test suite.
+
+### What worked
+
+All local validation commands passed.
+
+`make test-vectors` returned:
+
+```text
+ok  github.com/go-go-golems/goja-bleve/pkg  0.143s
+```
+
+The CI-spec generated xgoja smoke built successfully and both commands returned JSON results with `vectorSupport: true`:
+
+```text
+validated 18 check(s) for xgoja-vectors.ci.yaml
+xgoja build ok: .../cmd/goja-bleve/dist/goja-bleve-vectors
+```
+
+`GOWORK=off go test ./...` passed for the module.
+
+### What didn't work
+
+The GitHub Actions workflow was not executed in this local session. The workflow's FAISS build commands are based on the documented local playbook, but they still need a real runner execution.
+
+### What I learned
+
+The CI spec works locally without sibling replacements. That means the workflow can run generated xgoja vector smoke by default instead of keeping it as a manual experiment.
+
+### What was tricky to build
+
+The remaining tricky point is outside local validation: FAISS source builds can fail or run slowly on hosted CI even when the same commands are correct locally. The workflow uses `-j2` to reduce memory pressure, but actual runtime and stability are unknown until the first scheduled or manual run.
+
+### What warrants a second pair of eyes
+
+- The exact FAISS build/install commands in `.github/workflows/vector-faiss.yml`.
+- Whether `go 1.26.4` in `go.mod` is accepted by `actions/setup-go@v6` on current GitHub runners.
+- Whether the historical `cmd/XXX` package reported by `GOWORK=off go test ./...` should be cleaned up in a separate release-plumbing change.
+
+### What should be done in the future
+
+- Push the branch and run the `Vector FAISS Smoke` workflow manually.
+- Record workflow runtime and failure/success in this ticket if further work is needed.
+- If stable, consider adding pull-request path filters later.
+
+### Code review instructions
+
+Start with these files:
+
+- `/home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/Makefile`
+- `/home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/cmd/goja-bleve/xgoja-vectors.ci.yaml`
+- `/home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/.github/workflows/vector-faiss.yml`
+- `/home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/docs/faiss-xgoja-playbook.md`
+
+Validate with:
+
+```text
+make test-vectors
+make xgoja-smoke-vectors XGOJA_VECTOR_SPEC=xgoja-vectors.ci.yaml XGOJA_VECTOR_WORK_DIR=/tmp/goja-bleve-vector-ci-spec-work
+GOWORK=off go test ./...
+```
+
+### Technical details
+
+Final local validation proves local command correctness, not hosted-runner correctness. The workflow still needs GitHub execution because it is the only place that will exercise:
+
+```text
+apt install native dependencies
+clone blevesearch/faiss
+cmake FAISS with C API and shared libs
+make -j2 faiss faiss_c
+sudo make install
+sudo ldconfig
+make test-vectors
+make xgoja-smoke-vectors XGOJA_VECTOR_SPEC=xgoja-vectors.ci.yaml
 ```
