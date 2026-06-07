@@ -1,3 +1,20 @@
-topics: []
-docTypes: []
-intent: []
+topics:
+    - slug: bleve
+      description: Bleve search engine and bindings
+    - slug: ci
+      description: Continuous integration workflows and validation
+    - slug: goja
+      description: Goja JavaScript runtime integration
+    - slug: vector-search
+      description: Vector search, KNN, embeddings, and FAISS-backed retrieval
+    - slug: xgoja
+      description: xgoja generated Go/JavaScript runtime binaries
+docTypes:
+    - slug: index
+      description: Ticket index overview documents
+intent:
+    - slug: long-term
+      description: Long-term durable documentation intent
+status:
+    - slug: active
+      description: Active/current documentation or ticket status

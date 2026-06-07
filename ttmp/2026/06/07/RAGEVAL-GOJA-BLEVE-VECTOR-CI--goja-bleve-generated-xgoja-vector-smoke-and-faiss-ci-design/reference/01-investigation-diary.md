@@ -1,0 +1,220 @@
+---
+Title: Investigation diary
+Ticket: RAGEVAL-GOJA-BLEVE-VECTOR-CI
+Status: active
+Topics:
+    - goja
+    - xgoja
+    - bleve
+    - ci
+    - vector-search
+DocType: reference
+Intent: long-term
+Owners: []
+RelatedFiles:
+    - Path: Makefile
+      Note: Current vector test target and proposed generated smoke target location
+    - Path: cmd/goja-bleve/xgoja-vectors.yaml
+      Note: Evidence for local vector xgoja build settings and CI portability issue
+    - Path: docs/faiss-xgoja-playbook.md
+      Note: FAISS linker and runtime-loader evidence used by design
+ExternalSources: []
+Summary: Diary for the generated xgoja vector smoke and FAISS CI design ticket.
+LastUpdated: 2026-06-07T13:45:00-04:00
+WhatFor: Use this to understand why the ticket was created, what evidence shaped the design, and how to continue implementation.
+WhenToUse: Read before implementing generated xgoja vector smoke targets or optional FAISS-backed CI for goja-bleve.
+---
+
+
+# Diary
+
+## Goal
+
+This diary records the setup and design work for adding generated xgoja vector smoke coverage and optional FAISS-backed CI to `goja-bleve`.
+
+## Step 1: Create the vector smoke and FAISS CI design ticket
+
+I created a dedicated docmgr ticket for the first two hardening items the user selected: generated xgoja smoke coverage and optional FAISS CI. The work here is design-only; it explains the system boundaries, implementation sequence, and failure modes for an intern who has not worked in this repository before.
+
+The key design conclusion is that package vector tests and generated xgoja smoke tests validate different layers. `make test-vectors` proves the Go package can link FAISS and run vector-tagged tests. A new `make xgoja-smoke-vectors` target should prove that xgoja can build the vector host from YAML and run embedded JavaScript verbs through the generated CLI.
+
+### Prompt Context
+
+**User prompt (verbatim):** "Actually, let's create 6 and 7 first. Create a new docmgr ticket, and Create  a detailed analysis / design / implementation guide that is for a new intern, explaining all the parts of the system needed to understand what it is, with prose paragraphs and bullet point sand pseudocode and diagrams and api references and file references. It should be very clear and technical. Store in the ticket and the nupload to remarkable."
+
+**Assistant interpretation:** Create a new docmgr ticket for hardening tasks 6 and 7, write a detailed intern-oriented design and implementation guide, store it in the ticket workspace, and upload it to reMarkable.
+
+**Inferred user intent:** Preserve a clear implementation plan before writing code so a new contributor can safely add generated xgoja vector smoke coverage and optional FAISS CI without rediscovering the xgoja, FAISS, jsverb, and CI constraints.
+
+**Commit (code):** N/A — documentation/design work only.
+
+### What I did
+
+- Created ticket `RAGEVAL-GOJA-BLEVE-VECTOR-CI` with topics `goja,xgoja,bleve,ci,vector-search`.
+- Added the design document `design-doc/01-generated-xgoja-vector-smoke-and-faiss-ci-implementation-guide.md`.
+- Added this diary document.
+- Inspected the current `Makefile`, GitHub Actions workflows, `cmd/goja-bleve/xgoja-vectors.yaml`, and existing FAISS/xgoja docs.
+- Wrote an intern-oriented guide covering:
+  - current module and generated-host architecture,
+  - package vector tests vs generated xgoja smoke tests,
+  - FAISS build and link requirements,
+  - CI portability problems caused by local `replace` paths,
+  - proposed Makefile targets,
+  - proposed optional GitHub Actions workflow,
+  - pseudocode, diagrams, API references, failure modes, file references, and review checklist.
+
+### Why
+
+The previous hardening discussion identified generated xgoja smoke coverage and FAISS CI as useful next steps. They should be designed before implementation because they cross several subsystem boundaries: native Go modules, xgoja code generation, jsverb command mounting, CGO linker flags, FAISS native libraries, nested generated modules, and GitHub Actions runner setup.
+
+### What worked
+
+- The existing repository already has `make test-vectors`, so the design can build on a known-good local vector validation command.
+- `cmd/goja-bleve/xgoja-vectors.yaml` already encodes the correct vector tag, rpath, and `CGO_LDFLAGS` through xgoja `go.env`.
+- The generated vector smoke commands are deterministic: `vector knn` and `vector hybrid` do not need an external embedding provider.
+- The FAISS playbook created earlier provides the exact native-library troubleshooting content needed by the CI design.
+
+### What didn't work
+
+- No implementation was attempted in this step.
+- A clean GitHub Actions checkout will not automatically satisfy the local sibling `replace` paths currently present in `xgoja-vectors.yaml`. The design calls this out as a portability issue and recommends either a CI-specific spec or sibling repository checkouts.
+
+### What I learned
+
+- The generated xgoja smoke target should not be folded into `test-vectors`; each target validates a distinct layer and should fail independently.
+- The first FAISS CI workflow should be non-required and manually/scheduled, because source-building FAISS can be slow or sensitive to runner changes.
+- The RAG Geppetto command is not the right first CI smoke because it needs real embedding provider configuration; deterministic vector jsverbs are better for CI.
+
+### What was tricky to build
+
+The tricky part was designing a CI plan that does not assume the developer workstation layout. The local xgoja vector spec uses sibling `replace` paths for `geppetto` and `go-go-goja`, which is useful during active workspace development but not portable to a clean single-repository GitHub Actions checkout. The design therefore separates the local smoke target from the CI portability strategy and recommends a CI-specific spec with released versions when possible.
+
+### What warrants a second pair of eyes
+
+- Whether the project should add a CI-specific `xgoja-vectors.ci.yaml`, or whether the workflow should checkout sibling repositories while the related modules are still evolving.
+- Whether FAISS source build time is acceptable for a scheduled/manual workflow, or whether a prebuilt cache/container should be introduced after the first implementation.
+- Whether `xgoja-smoke-vectors` should eventually be required on pull requests touching `pkg/**` or `cmd/goja-bleve/**`.
+
+### What should be done in the future
+
+- Implement the Makefile targets from the design guide.
+- Add the optional FAISS workflow and observe its runtime/stability before making it a required PR check.
+- Update README, quickstart, and FAISS playbook once the targets exist.
+
+### Code review instructions
+
+- Start with `design-doc/01-generated-xgoja-vector-smoke-and-faiss-ci-implementation-guide.md`.
+- Check the proposed Makefile snippets against the current `Makefile`.
+- Check the proposed workflow against `.github/workflows/push.yml` and `.github/workflows/dependency-scanning.yml` so the FAISS job stays separate from default CI.
+- Validate future implementation with:
+  - `make test-vectors`
+  - `make xgoja-smoke-vectors`
+  - `GOWORK=off go test ./...`
+
+### Technical details
+
+Primary local references:
+
+- `/home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/Makefile`
+- `/home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/.github/workflows/push.yml`
+- `/home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/.github/workflows/dependency-scanning.yml`
+- `/home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/cmd/goja-bleve/xgoja-vectors.yaml`
+- `/home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/cmd/goja-bleve/jsverbs/vector.js`
+- `/home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/cmd/goja-bleve/jsverbs/rag.js`
+- `/home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/docs/faiss-xgoja-playbook.md`
+
+## Step 2: Add and validate local generated xgoja vector smoke targets
+
+I implemented the first code slice from the design guide: local Makefile targets that build the vector-enabled xgoja host and run the deterministic vector JavaScript smoke verbs. This gives contributors one command that validates the generated binary layer, not only the package-level vector tests.
+
+The target passed locally with the existing FAISS installation. The generated binary built from `cmd/goja-bleve/xgoja-vectors.yaml`, and both `vector knn` and `vector hybrid` returned JSON results with `vectorSupport: true` and `chunk-1` ranked first.
+
+### Prompt Context
+
+**User prompt (verbatim):** "go ahead, step by step, commit at appropriat eintervals, keep a frequent detailed diary as you go"
+
+**Assistant interpretation:** Start implementing the ticket incrementally, commit focused changes at useful checkpoints, and keep the diary updated after each meaningful step.
+
+**Inferred user intent:** Make steady, reviewable progress while preserving a clear continuation trail and avoiding one large opaque change.
+
+**Commit (code):** fc3a509ad0581ded90c180dcbd09176d99d32cd9 — "Add generated xgoja vector smoke target"
+
+### What I did
+
+- Edited `/home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/Makefile`.
+- Added `xgoja-build-vectors` and `xgoja-smoke-vectors` to `.PHONY`.
+- Added configurable variables:
+  - `XGOJA_VERSION ?= v0.8.3`
+  - `XGOJA_VECTOR_SPEC ?= xgoja-vectors.yaml`
+  - `XGOJA_VECTOR_WORK_DIR ?= /tmp/goja-bleve-vector-work`
+- Added `xgoja-build-vectors` to run xgoja against `cmd/goja-bleve/xgoja-vectors.yaml`.
+- Added `xgoja-smoke-vectors` to run:
+  - `./dist/goja-bleve-vectors vector knn --output json`
+  - `./dist/goja-bleve-vectors vector hybrid --output json`
+- Ran `make xgoja-smoke-vectors`.
+
+### Why
+
+The package target `make test-vectors` proves the Go package can compile and test under `-tags=vectors`. It does not prove the xgoja YAML spec, generated host, embedded jsverbs, provider mounting, or CLI command path. The new target covers that generated-runtime layer with deterministic smoke commands.
+
+### What worked
+
+The command passed:
+
+```text
+make xgoja-smoke-vectors
+```
+
+Key output:
+
+```text
+validated 21 check(s) for xgoja-vectors.yaml
+generated build workspace: /tmp/goja-bleve-vector-work
+xgoja build ok: /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/cmd/goja-bleve/dist/goja-bleve-vectors
+```
+
+The KNN smoke returned `chunk-1` then `chunk-3`, both with `vectorSupport: true`. The hybrid smoke also returned `chunk-1` then `chunk-3` with `scoreMode: "rrf"` and `vectorSupport: true`.
+
+### What didn't work
+
+No command failure occurred in this step.
+
+### What I learned
+
+The current local xgoja vector spec is already sufficient for the developer workstation path. The new Makefile target did not need additional shell `CGO_LDFLAGS` because the spec's `go.env` entry is correctly passed into `go build` by xgoja.
+
+### What was tricky to build
+
+The main trick was preserving unrelated working-tree changes. `Makefile` already had uncommitted release/install placeholder fixes before this step. The new target was added on top of that file, but the commit should stage only the xgoja vector smoke hunks and leave unrelated Makefile hunks unstaged.
+
+### What warrants a second pair of eyes
+
+- Whether `--keep-work` should remain in the default target or become configurable; it is useful for debugging but leaves `/tmp/goja-bleve-vector-work` behind.
+- Whether the target should delete `cmd/goja-bleve/dist/goja-bleve-vectors` before rebuilding to make stale-binary failures more obvious.
+- Whether the target should assert the JSON output shape or keep command success as the smoke assertion.
+
+### What should be done in the future
+
+- Add documentation for the new Makefile target.
+- Add a CI workflow for package vector tests.
+- Decide whether to add a CI-compatible xgoja spec or sibling checkouts before enabling generated xgoja smoke in GitHub Actions.
+
+### Code review instructions
+
+- Review `/home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/Makefile` near the `test-vectors` target.
+- Validate with:
+  - `make xgoja-smoke-vectors`
+  - `make test-vectors`
+
+### Technical details
+
+The new smoke path is:
+
+```text
+make xgoja-smoke-vectors
+  -> make xgoja-build-vectors
+  -> cd cmd/goja-bleve
+  -> go run github.com/go-go-golems/go-go-goja/cmd/xgoja@v0.8.3 build -f xgoja-vectors.yaml
+  -> ./dist/goja-bleve-vectors vector knn --output json
+  -> ./dist/goja-bleve-vectors vector hybrid --output json
+```

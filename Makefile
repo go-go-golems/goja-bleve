@@ -1,10 +1,13 @@
-.PHONY: gifs logcopter-generate logcopter-check test-vectors
+.PHONY: gifs logcopter-generate logcopter-check test-vectors xgoja-build-vectors xgoja-smoke-vectors
 
 all: gifs
 
 VERSION=v0.1.14
 GORELEASER_ARGS ?= --skip=sign --snapshot --clean
 GORELEASER_TARGET ?= --single-target
+XGOJA_VERSION ?= v0.8.3
+XGOJA_VECTOR_SPEC ?= xgoja-vectors.yaml
+XGOJA_VECTOR_WORK_DIR ?= /tmp/goja-bleve-vector-work
 
 TAPES=$(wildcard doc/vhs/*tape)
 gifs: $(TAPES)
@@ -32,6 +35,17 @@ test:
 
 test-vectors:
 	GOWORK=off CGO_LDFLAGS="-L/usr/local/lib -lfaiss_c -lfaiss -lstdc++ -lm" go test -tags=vectors -ldflags "-r /usr/local/lib" ./pkg -count=1
+
+xgoja-build-vectors:
+	cd cmd/goja-bleve && GOWORK=off go run github.com/go-go-golems/go-go-goja/cmd/xgoja@$(XGOJA_VERSION) build \
+		-f $(XGOJA_VECTOR_SPEC) \
+		--work-dir $(XGOJA_VECTOR_WORK_DIR) \
+		--keep-work \
+		--xgoja-version $(XGOJA_VERSION)
+
+xgoja-smoke-vectors: xgoja-build-vectors
+	cd cmd/goja-bleve && ./dist/goja-bleve-vectors vector knn --output json
+	cd cmd/goja-bleve && ./dist/goja-bleve-vectors vector hybrid --output json
 
 build:
 	GOWORK=off go generate ./...
