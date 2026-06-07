@@ -226,6 +226,18 @@ make xgoja-smoke-vectors \
 
 If xgoja is invoked another way, make sure the generated Go package sees the same effective settings. A non-vector xgoja build will still load `require("bleve")`, but `bleve.vectorSupport` will be `false` and vector APIs will return explicit `-tags=vectors` errors.
 
+## Optional GitHub Actions vector workflow
+
+This repository includes an optional workflow at `.github/workflows/vector-faiss.yml`. It is intentionally not part of the default pull-request pipeline yet. It runs on a weekly schedule and can be started manually from the GitHub Actions UI.
+
+The workflow builds the Bleve-compatible FAISS fork on an Ubuntu runner, installs `libfaiss_c.so` and `libfaiss.so` under `/usr/local/lib`, verifies headers and dynamic linker visibility, then runs:
+
+```bash
+make test-vectors
+```
+
+The manual trigger has a `run-xgoja-smoke` input. Leave it at `false` unless the xgoja vector spec resolves on the runner. The local `cmd/goja-bleve/xgoja-vectors.yaml` still contains sibling workspace `replace` paths for active development, so generated xgoja smoke is opt-in until a CI-compatible spec or sibling checkout strategy is added.
+
 ## Use FAISS installed somewhere else
 
 If FAISS is not installed under `/usr/local`, change all three places consistently.
@@ -381,7 +393,7 @@ Suggested improvements:
 2. Treat `docs/quickstart.md` as user-facing first-run material.
 3. Treat this playbook as maintainer/operator material for local machines and CI runners.
 4. Add a `docs/README.md` index if more documents are added.
-5. If CI ever grows a FAISS-enabled runner, add a dedicated vector job that runs `make test-vectors` after installing FAISS, then optionally runs `make xgoja-smoke-vectors` once the xgoja spec is portable to a clean checkout.
+5. Keep `.github/workflows/vector-faiss.yml` optional until the FAISS build runtime is known to be stable enough for pull requests.
 
 ## Final checklist
 

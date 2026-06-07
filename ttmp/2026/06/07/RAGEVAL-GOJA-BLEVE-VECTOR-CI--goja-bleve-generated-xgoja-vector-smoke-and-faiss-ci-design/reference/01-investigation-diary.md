@@ -312,3 +312,110 @@ make xgoja-smoke-vectors
   -> generated dist/goja-bleve-vectors binary
   -> vector knn and vector hybrid jsverbs
 ```
+
+
+## Step 4: Add optional FAISS-backed GitHub Actions workflow
+
+I added the first CI implementation slice as a new optional workflow rather than extending the default pull-request pipeline. The workflow builds the Bleve-compatible FAISS fork on an Ubuntu runner, verifies the installed native headers and shared libraries, and then runs `make test-vectors`.
+
+Generated xgoja smoke remains opt-in in the workflow because the current local xgoja vector spec contains sibling workspace `replace` paths. The workflow exposes a manual `run-xgoja-smoke` input for experiments, but the scheduled/default path only runs package vector tests after installing FAISS.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 2)
+
+**Assistant interpretation:** Continue the implementation sequence by adding the optional FAISS CI workflow after the local target and docs are in place.
+
+**Inferred user intent:** Get real CI coverage for vector-tagged package tests while avoiding unstable required checks or clean-runner failures from local xgoja replacement paths.
+
+**Commit (code):** TBD — pending workflow commit.
+
+### What I did
+
+- Added `/home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/.github/workflows/vector-faiss.yml`.
+- Configured triggers:
+  - `workflow_dispatch`, with an optional `run-xgoja-smoke` input,
+  - weekly schedule at `0 4 * * 0`.
+- Kept permissions minimal with `contents: read`.
+- Added steps to:
+  - checkout the repository,
+  - set up Go from `go.mod`,
+  - install FAISS build dependencies,
+  - clone `blevesearch/faiss`,
+  - checkout commit `fff814d`,
+  - configure FAISS with C API and shared libraries,
+  - build `faiss` and `faiss_c` with `-j2`,
+  - install/copy the shared libraries and run `ldconfig`,
+  - verify headers and shared libraries,
+  - run `make test-vectors`.
+- Added an opt-in generated xgoja smoke step guarded by:
+  - `github.event_name == 'workflow_dispatch'`
+  - `inputs.run-xgoja-smoke == 'true'`
+- Updated `docs/faiss-xgoja-playbook.md` with the new optional workflow behavior.
+- Parsed the workflow with Ruby/Psych as a syntax sanity check.
+
+### Why
+
+The vector package tests need a clean-runner native dependency check. Adding the job as optional gives maintainers scheduled and manual signal without making all pull requests depend on FAISS build time or runner-specific C++ toolchain behavior.
+
+### What worked
+
+The workflow file was created and the YAML parsed locally with:
+
+```text
+ruby -e 'require "yaml"; p YAML.load_file(".github/workflows/vector-faiss.yml").keys'
+```
+
+The parser returned keys for the workflow document. No local GitHub Actions execution was attempted.
+
+### What didn't work
+
+No local workflow runner execution was attempted, so the FAISS build commands still need to be proven by GitHub Actions. Ruby's YAML 1.1 parser reads the `on` key as boolean `true`, which is a known YAML-version mismatch for GitHub workflows rather than a GitHub Actions syntax problem.
+
+### What I learned
+
+A first CI version can safely validate `make test-vectors` without solving xgoja clean-checkout portability in the same step. The generated xgoja smoke path can remain manual/experimental until the replacement strategy is chosen.
+
+### What was tricky to build
+
+The tricky part was exposing generated xgoja smoke without accidentally making the scheduled workflow fail on clean runners. The solution was to include the step but guard it behind a manual input whose default is `false`. That preserves an experimentation hook while keeping the normal CI signal focused on package vector tests.
+
+### What warrants a second pair of eyes
+
+- Whether `libopenblas-dev` and `libgomp1` are sufficient for the FAISS build on the current `ubuntu-latest` image.
+- Whether `make -C build -j2 faiss faiss_c` is the right concurrency/runtime tradeoff.
+- Whether the workflow should cache `/tmp/faiss/build` or installed artifacts after the first successful runs.
+- Whether the manual xgoja smoke input should be removed until a CI-compatible spec exists, to avoid user confusion.
+
+### What should be done in the future
+
+- Run the workflow manually on GitHub and record the result.
+- If it passes consistently, consider adding a pull-request trigger with path filters.
+- Add a CI-compatible `xgoja-vectors.ci.yaml` or sibling checkout strategy before enabling generated xgoja smoke by default.
+
+### Code review instructions
+
+- Review `.github/workflows/vector-faiss.yml` from top to bottom.
+- Compare the FAISS build commands with `docs/faiss-xgoja-playbook.md`.
+- Confirm the workflow is not required on pull requests.
+- Validate local prerequisites with:
+  - `make test-vectors`
+  - `make xgoja-smoke-vectors`
+
+### Technical details
+
+The workflow's normal path is:
+
+```text
+workflow_dispatch or schedule
+  -> checkout goja-bleve
+  -> setup Go from go.mod
+  -> apt install cmake/g++/make/libopenblas-dev/libgomp1
+  -> clone blevesearch/faiss
+  -> checkout fff814d
+  -> cmake with FAISS_ENABLE_C_API=ON and BUILD_SHARED_LIBS=ON
+  -> make -j2 faiss faiss_c
+  -> sudo make install + copy shared libs + ldconfig
+  -> verify headers/libs
+  -> make test-vectors
+```

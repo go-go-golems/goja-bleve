@@ -1,0 +1,68 @@
+name: Vector FAISS Smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      run-xgoja-smoke:
+        description: "Also run make xgoja-smoke-vectors after package vector tests. Requires xgoja spec replacements to resolve on the runner."
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+  schedule:
+    - cron: "0 4 * * 0"
+
+permissions:
+  contents: read
+
+jobs:
+  vector-faiss:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install FAISS build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++ make libopenblas-dev libgomp1
+
+      - name: Build and install Bleve-compatible FAISS
+        run: |
+          git clone https://github.com/blevesearch/faiss.git /tmp/faiss
+          cd /tmp/faiss
+          git checkout fff814d
+          cmake -B build \
+            -DFAISS_ENABLE_GPU=OFF \
+            -DFAISS_ENABLE_C_API=ON \
+            -DBUILD_SHARED_LIBS=ON \
+            -DFAISS_ENABLE_PYTHON=OFF \
+            -DCMAKE_INSTALL_PREFIX=/usr/local \
+            -DCMAKE_CXX_FLAGS="-I$PWD" \
+            .
+          make -C build -j2 faiss faiss_c
+          sudo make -C build install
+          sudo cp build/faiss/libfaiss.so /usr/local/lib/ || true
+          sudo cp build/c_api/libfaiss_c.so /usr/local/lib/ || true
+          sudo ldconfig
+
+      - name: Verify FAISS installation
+        run: |
+          ls -lh /usr/local/lib/libfaiss.so /usr/local/lib/libfaiss_c.so
+          ls -lh /usr/local/include/faiss/c_api/IndexBinary_c_ex.h
+          ldconfig -p | grep -E 'libfaiss(_c)?\.so'
+
+      - name: Run vector package tests
+        run: make test-vectors
+
+      - name: Run generated xgoja vector smoke
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.run-xgoja-smoke == 'true' }}
+        run: make xgoja-smoke-vectors
