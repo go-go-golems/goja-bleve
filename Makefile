@@ -1,4 +1,4 @@
-.PHONY: gifs logcopter-generate logcopter-check
+.PHONY: gifs logcopter-generate logcopter-check test-vectors
 
 all: gifs
 
@@ -29,6 +29,9 @@ govulncheck:
 
 test:
 	GOWORK=off go test ./...
+
+test-vectors:
+	GOWORK=off CGO_LDFLAGS="-L/usr/local/lib -lfaiss_c -lfaiss -lstdc++ -lm" go test -tags=vectors -ldflags "-r /usr/local/lib" ./pkg -count=1
 
 build:
 	GOWORK=off go generate ./...

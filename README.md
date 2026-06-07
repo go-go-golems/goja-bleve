@@ -85,17 +85,13 @@ Bleve vector search requires the host Go binary to be compiled with:
 -tags=vectors
 ```
 
-It also requires FAISS to be installed and linked for CGO. The validated linker flags from the RAG evaluation system are:
+It also requires FAISS to be installed and linked for CGO. Use the local Makefile target for validation:
 
 ```bash
-CGO_LDFLAGS="-L/usr/local/lib -lfaiss_c -lfaiss -lstdc++ -lm"
+make test-vectors
 ```
 
-The detailed FAISS build instructions live in:
-
-```text
-/home/manuel/workspaces/2026-05-27/rag-evaluation-system/2026-05-27--rag-evaluation-system/docs/howto-compile-faiss-for-bleve-vectors.md
-```
+For the full FAISS build, linker, runtime-loader, and xgoja configuration procedure, see [docs/faiss-xgoja-playbook.md](docs/faiss-xgoja-playbook.md).
 
 ## Provider and host integration
 
@@ -134,7 +130,9 @@ RAG evaluation scripts can load `bleve` alongside other runtime modules such as 
 
 ## Examples and TypeScript declarations
 
+- Documentation index: `docs/README.md`
 - Quickstart: `docs/quickstart.md`
+- FAISS/xgoja vector playbook: `docs/faiss-xgoja-playbook.md`
 - Text search: `examples/text-search.js`
 - Batch indexing: `examples/batch-indexing.js`
 - Pure vector KNN: `examples/vector-knn.js`
@@ -160,12 +158,12 @@ For vector jsverbs, build the vector-specific xgoja spec:
 
 ```bash
 cd cmd/goja-bleve
-GOWORK=off CGO_LDFLAGS="-L/usr/local/lib -lfaiss_c -lfaiss -lstdc++ -lm" \
-  go run github.com/go-go-golems/go-go-goja/cmd/xgoja@v0.7.4 build \
+GOWORK=off \
+  go run github.com/go-go-golems/go-go-goja/cmd/xgoja@v0.8.3 build \
   -f xgoja-vectors.yaml \
   --work-dir /tmp/goja-bleve-vector-work \
   --keep-work \
-  --xgoja-version v0.7.4
+  --xgoja-version v0.8.3
 ./dist/goja-bleve-vectors vector knn --output json
 ./dist/goja-bleve-vectors vector hybrid --output json
 ```
@@ -175,7 +173,6 @@ GOWORK=off CGO_LDFLAGS="-L/usr/local/lib -lfaiss_c -lfaiss -lstdc++ -lm" \
 ```bash
 go test ./... -count=1
 GOWORK=off go test ./... -count=1
-GOWORK=off CGO_LDFLAGS="-L/usr/local/lib -lfaiss_c -lfaiss -lstdc++ -lm" \
-  go test -tags=vectors -ldflags "-r /usr/local/lib" ./pkg -count=1
+make test-vectors
 cd cmd/goja-bleve && GOWORK=off go test ./... -count=1
 ```

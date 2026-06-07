@@ -41,15 +41,10 @@ batch.execute();
 Vector search requires a host binary built with Bleve's vector tag and FAISS linked:
 
 ```bash
-GOWORK=off CGO_LDFLAGS="-L/usr/local/lib -lfaiss_c -lfaiss -lstdc++ -lm" \
-  go test -tags=vectors -ldflags "-r /usr/local/lib" ./pkg -count=1
+make test-vectors
 ```
 
-The validated FAISS setup instructions live at:
-
-```text
-/home/manuel/workspaces/2026-05-27/rag-evaluation-system/2026-05-27--rag-evaluation-system/docs/howto-compile-faiss-for-bleve-vectors.md
-```
+That target wraps the required `-tags=vectors`, `CGO_LDFLAGS`, and runtime rpath settings. For machine setup, troubleshooting, and xgoja vector builds, see [FAISS + goja-bleve + xgoja Playbook](faiss-xgoja-playbook.md).
 
 ```javascript
 const embedding = bleve.field().vector(4).similarity("cosine").optimizedFor("recall").build();
