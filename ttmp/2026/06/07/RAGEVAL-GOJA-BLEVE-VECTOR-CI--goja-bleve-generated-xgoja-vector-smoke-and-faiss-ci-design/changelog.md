@@ -104,3 +104,13 @@ Step 9: Fixed GoReleaser and install targets to build the generated xgoja host f
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/Makefile — Install target now builds from inside cmd/goja-bleve
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/ttmp/2026/06/07/RAGEVAL-GOJA-BLEVE-VECTOR-CI--goja-bleve-generated-xgoja-vector-smoke-and-faiss-ci-design/reference/01-investigation-diary.md — Step 9 release-plumbing diagnosis
 
+
+## 2026-06-07
+
+Step 10: Removed disabled publish-docs reusable job from release workflow comments-only template so GitHub no longer validates id-token permissions for an inactive job.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/.github/workflows/release.yaml — Release workflow validation fix
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/ttmp/2026/06/07/RAGEVAL-GOJA-BLEVE-VECTOR-CI--goja-bleve-generated-xgoja-vector-smoke-and-faiss-ci-design/reference/01-investigation-diary.md — Step 10 workflow diagnosis
+

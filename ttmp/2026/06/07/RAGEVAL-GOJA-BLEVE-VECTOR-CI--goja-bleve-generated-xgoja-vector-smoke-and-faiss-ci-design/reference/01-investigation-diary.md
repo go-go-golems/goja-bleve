@@ -907,3 +907,82 @@ Correct manual build shape:
 cd cmd/goja-bleve
 GOWORK=off go build .
 ```
+
+## Step 10: Fix invalid release workflow disabled reusable job
+
+I fixed the release workflow validation error caused by a disabled reusable `publish-docs` job. GitHub validates reusable-workflow permission requirements even when the job has `if: ${{ false }}`, so the workflow was invalid because the called workflow requested `id-token: write` while the caller allowed `id-token: none`.
+
+The fix was to remove the disabled `uses:` job from the active workflow and leave it as explanatory comments. This keeps the release workflow valid without granting OIDC permissions to all release runs just to satisfy a disabled template.
+
+### Prompt Context
+
+**User prompt (verbatim):** "1 error
+Invalid workflow file: .github/workflows/release.yaml#L80
+The workflow is not valid. .github/workflows/release.yaml (Line: 80, Col: 3): Error calling workflow 'go-go-golems/infra-tooling/.github/workflows/publish-docsctl.yml@main'. The workflow is requesting 'id-token: write', but is only allowed 'id-token: none'."
+
+**Assistant interpretation:** Diagnose and fix the GitHub Actions workflow validation error in `release.yaml`.
+
+**Inferred user intent:** Make the release workflow valid without accidentally enabling the disabled docs publishing path or granting unnecessary permissions.
+
+**Commit (code):** f13dc6b46ead0e8731d06fb6c6cfb48334156657 — "Fix release workflow docs publishing template"
+
+### What I did
+
+- Edited `/home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/.github/workflows/release.yaml`.
+- Removed the active disabled `publish-docs` reusable-workflow job.
+- Kept a commented template explaining how to re-enable docs publishing later.
+- Added a warning that GitHub validates reusable workflow permissions even when a job is guarded with `if: ${{ false }}`.
+- Parsed the workflow locally with Ruby YAML and confirmed active jobs are now only:
+  - `goreleaser-linux`
+  - `goreleaser-darwin`
+  - `goreleaser-merge`
+
+### Why
+
+Adding `id-token: write` would also make the workflow valid, but it would grant OIDC permissions for a job that is intentionally disabled. Removing the disabled reusable job is safer and more explicit.
+
+### What worked
+
+Local YAML parsing succeeded, and the active job list no longer includes `publish-docs`:
+
+```text
+["goreleaser-linux", "goreleaser-darwin", "goreleaser-merge"]
+```
+
+### What didn't work
+
+No remote GitHub validation was run in this step.
+
+### What I learned
+
+GitHub Actions validates called reusable workflow permissions at workflow-parse time. An `if: false` guard prevents execution but does not prevent reusable-workflow permission validation.
+
+### What was tricky to build
+
+The tricky part is that the workflow looked disabled, but GitHub still rejected it. The safe pattern is not to keep disabled `uses:` jobs around as templates unless the caller grants every permission the reusable workflow requests.
+
+### What warrants a second pair of eyes
+
+- Whether the commented template should be moved to a separate documentation file instead of living in `release.yaml`.
+- Whether future docs publishing should be enabled in this repository at all.
+
+### What should be done in the future
+
+If docs publishing is enabled later, add a real `publish-docs` job and explicitly grant its required permissions in the top-level or job-level `permissions` block.
+
+### Code review instructions
+
+- Review `.github/workflows/release.yaml` around the former `publish-docs` block.
+- Confirm there is no active reusable `publish-docs` job unless the required permissions are also granted.
+
+### Technical details
+
+The invalid pattern was:
+
+```yaml
+publish-docs:
+  if: ${{ false && startsWith(github.ref, 'refs/tags/v') }}
+  uses: go-go-golems/infra-tooling/.github/workflows/publish-docsctl.yml@main
+```
+
+The corrected workflow keeps only comments and no active reusable job.
