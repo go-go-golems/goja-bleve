@@ -234,7 +234,7 @@ The validation commands still pass after the documentation update. This confirms
 
 **Inferred user intent:** Keep the repository usable for future contributors by making every new workflow discoverable and backed by validation evidence.
 
-**Commit (code):** TBD — pending documentation commit.
+**Commit (code):** 50e7eacf392f8ede73054522fafba72354338799 — "Document xgoja vector smoke target"
 
 ### What I did
 
@@ -328,7 +328,7 @@ Generated xgoja smoke remains opt-in in the workflow because the current local x
 
 **Inferred user intent:** Get real CI coverage for vector-tagged package tests while avoiding unstable required checks or clean-runner failures from local xgoja replacement paths.
 
-**Commit (code):** TBD — pending workflow commit.
+**Commit (code):** 257b91e6083a6c22acfb7b49401b25056d4ef556 — "Add optional FAISS vector workflow"
 
 ### What I did
 
@@ -418,4 +418,114 @@ workflow_dispatch or schedule
   -> sudo make install + copy shared libs + ldconfig
   -> verify headers/libs
   -> make test-vectors
+```
+
+
+## Step 5: Add a CI-compatible xgoja vector spec and enable generated smoke in the FAISS workflow
+
+I removed the main limitation from the first workflow version by adding a CI-specific xgoja vector spec. The new spec keeps the `goja-bleve` package replaced to the current checkout, but it uses released `geppetto` and `go-go-goja` versions instead of local sibling workspace paths. That makes generated xgoja vector smoke viable on a clean GitHub Actions checkout.
+
+After adding the spec, I changed the FAISS workflow so generated xgoja smoke runs by default after `make test-vectors`. Locally, the CI spec built successfully and both deterministic vector jsverbs passed.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 2)
+
+**Assistant interpretation:** Continue hardening step by step by making the generated xgoja smoke target usable from CI, not just from the local workspace.
+
+**Inferred user intent:** Close the gap between local generated-host validation and CI validation so the new workflow covers both requested hardening items.
+
+**Commit (code):** TBD — pending CI-spec commit.
+
+### What I did
+
+- Added `/home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/cmd/goja-bleve/xgoja-vectors.ci.yaml`.
+- Copied the vector build settings from `xgoja-vectors.yaml`:
+  - `go.tags: [vectors]`,
+  - `go.ldflags: [-r, /usr/local/lib]`,
+  - `go.env.CGO_LDFLAGS` with `-lfaiss_c -lfaiss -lstdc++ -lm`.
+- Kept the current repository replacement:
+  - `goja-bleve` version `v0.0.0`, `replace: ../..`.
+- Replaced local sibling paths with released versions:
+  - `geppetto v0.11.7`,
+  - `go-go-goja-core v0.8.3`,
+  - `go-go-goja-host v0.8.3`.
+- Updated `.github/workflows/vector-faiss.yml` to run:
+  - `make test-vectors`,
+  - `make xgoja-smoke-vectors XGOJA_VECTOR_SPEC=xgoja-vectors.ci.yaml`.
+- Updated `docs/faiss-xgoja-playbook.md` to explain the local spec vs CI spec split.
+- Validated locally with:
+  - `ruby -e 'require "yaml"; p YAML.load_file(".github/workflows/vector-faiss.yml").keys'`,
+  - `make test-vectors`,
+  - `make xgoja-smoke-vectors XGOJA_VECTOR_SPEC=xgoja-vectors.ci.yaml XGOJA_VECTOR_WORK_DIR=/tmp/goja-bleve-vector-ci-spec-work`.
+
+### Why
+
+The local `xgoja-vectors.yaml` is correct for active multi-repository development, but its sibling `replace` paths are not a clean CI contract. A separate CI spec makes the intended environment explicit: use the pull request checkout for `goja-bleve`, and use released dependency versions for external providers.
+
+### What worked
+
+The CI spec validated with xgoja:
+
+```text
+validated 18 check(s) for xgoja-vectors.ci.yaml
+generated build workspace: /tmp/goja-bleve-vector-ci-spec-work
+xgoja build ok: .../cmd/goja-bleve/dist/goja-bleve-vectors
+```
+
+Both smoke commands passed and returned `vectorSupport: true`:
+
+```text
+./dist/goja-bleve-vectors vector knn --output json
+./dist/goja-bleve-vectors vector hybrid --output json
+```
+
+`make test-vectors` also passed.
+
+### What didn't work
+
+No command failure occurred in this step. The only caveat is that local validation still used the machine's existing FAISS install; the full FAISS build/install path must be proven by running the GitHub Actions workflow.
+
+### What I learned
+
+The released `geppetto v0.11.7` and `go-go-goja v0.8.3` versions are sufficient for the generated vector smoke host. The CI spec therefore does not need sibling checkouts for this hardening slice.
+
+### What was tricky to build
+
+The subtle part was choosing which replacement to keep. The CI spec must keep `goja-bleve` replaced to `../..`; otherwise the generated nested module would fetch the last published module instead of testing the current checkout. But it should not replace `geppetto` or `go-go-goja` to sibling paths because those paths do not exist on a single-repo runner.
+
+### What warrants a second pair of eyes
+
+- Whether maintaining two mostly identical xgoja specs is acceptable, or whether xgoja should grow a parameterized replace strategy in the future.
+- Whether the CI workflow should run generated smoke by default immediately, or whether it should stay package-only until the first workflow run proves FAISS build time is acceptable.
+- Whether the output binary path `dist/goja-bleve-vectors` could collide with local-spec builds in developer machines; both specs intentionally produce the same executable name.
+
+### What should be done in the future
+
+- Run the new workflow on GitHub and record the result.
+- If runtime is high, add caching for the FAISS build or replace the source build with a maintained prebuilt artifact.
+- If released dependency versions drift, update `xgoja-vectors.ci.yaml` alongside `cmd/goja-bleve/go.mod` and the local xgoja spec.
+
+### Code review instructions
+
+- Compare `cmd/goja-bleve/xgoja-vectors.yaml` and `cmd/goja-bleve/xgoja-vectors.ci.yaml`.
+- Ensure only local sibling `replace` paths were removed from the CI spec.
+- Review `.github/workflows/vector-faiss.yml` and confirm it uses `XGOJA_VECTOR_SPEC=xgoja-vectors.ci.yaml`.
+- Validate locally with:
+  - `make test-vectors`,
+  - `make xgoja-smoke-vectors XGOJA_VECTOR_SPEC=xgoja-vectors.ci.yaml XGOJA_VECTOR_WORK_DIR=/tmp/goja-bleve-vector-ci-spec-work`.
+
+### Technical details
+
+The CI spec dependency policy is:
+
+```text
+goja-bleve provider
+  -> replace ../.. so CI tests the current checkout
+
+geppetto provider
+  -> released module v0.11.7
+
+go-go-goja core/host providers
+  -> released module v0.8.3
 ```

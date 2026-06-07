@@ -55,3 +55,14 @@ Step 4: Added optional Vector FAISS Smoke GitHub Actions workflow and documented
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/docs/faiss-xgoja-playbook.md — Documents optional workflow and xgoja smoke caveat
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/ttmp/2026/06/07/RAGEVAL-GOJA-BLEVE-VECTOR-CI--goja-bleve-generated-xgoja-vector-smoke-and-faiss-ci-design/reference/01-investigation-diary.md — Step 4 workflow notes
 
+
+## 2026-06-07
+
+Step 5: Added xgoja-vectors.ci.yaml and enabled generated xgoja vector smoke in the optional FAISS workflow.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/.github/workflows/vector-faiss.yml — Runs make test-vectors and generated xgoja smoke with CI spec
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/cmd/goja-bleve/xgoja-vectors.ci.yaml — Clean-checkout xgoja vector spec for CI
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/docs/faiss-xgoja-playbook.md — Documents local vs CI xgoja vector specs
+

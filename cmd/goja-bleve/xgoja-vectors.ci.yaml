@@ -1,0 +1,60 @@
+name: goja-bleve-vectors
+appName: goja-bleve
+go:
+  tags:
+    - vectors
+  ldflags:
+    - -r
+    - /usr/local/lib
+  env:
+    CGO_LDFLAGS: "-L/usr/local/lib -lfaiss_c -lfaiss -lstdc++ -lm"
+target:
+  kind: xgoja
+  output: dist/goja-bleve-vectors
+packages:
+  - id: goja-bleve
+    import: github.com/go-go-golems/goja-bleve/pkg/xgoja/providers/bleve
+    version: v0.0.0
+    replace: ../..
+  - id: geppetto
+    import: github.com/go-go-golems/geppetto/pkg/js/modules/geppetto/provider
+    version: v0.11.7
+  - id: go-go-goja-core
+    import: github.com/go-go-golems/go-go-goja/pkg/xgoja/providers/core
+    version: v0.8.3
+  - id: go-go-goja-host
+    import: github.com/go-go-golems/go-go-goja/pkg/xgoja/providers/host
+    version: v0.8.3
+modules:
+  - package: goja-bleve
+    name: bleve
+    as: bleve
+  - package: geppetto
+    name: geppetto
+    as: geppetto
+  - package: go-go-goja-core
+    name: path
+    as: path
+  - package: go-go-goja-core
+    name: yaml
+    as: yaml
+  - package: go-go-goja-host
+    name: fs
+    as: fs
+    config:
+      allow: true
+commands:
+  eval:
+    enabled: true
+  run:
+    enabled: true
+  repl:
+    enabled: true
+  jsverbs:
+    enabled: true
+    name: verbs
+    mount: root
+jsverbs:
+  - id: goja-bleve-bundled-verbs
+    path: ./jsverbs
+    embed: true

@@ -234,9 +234,10 @@ The workflow builds the Bleve-compatible FAISS fork on an Ubuntu runner, install
 
 ```bash
 make test-vectors
+make xgoja-smoke-vectors XGOJA_VECTOR_SPEC=xgoja-vectors.ci.yaml
 ```
 
-The manual trigger has a `run-xgoja-smoke` input. Leave it at `false` unless the xgoja vector spec resolves on the runner. The local `cmd/goja-bleve/xgoja-vectors.yaml` still contains sibling workspace `replace` paths for active development, so generated xgoja smoke is opt-in until a CI-compatible spec or sibling checkout strategy is added.
+The local `cmd/goja-bleve/xgoja-vectors.yaml` keeps sibling workspace `replace` paths for active development. CI uses `cmd/goja-bleve/xgoja-vectors.ci.yaml`, which keeps the current repository replacement for `goja-bleve` but uses released `geppetto` and `go-go-goja` module versions so the generated host can build from a clean checkout.
 
 ## Use FAISS installed somewhere else
 

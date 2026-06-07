@@ -2,15 +2,6 @@ name: Vector FAISS Smoke
 
 on:
   workflow_dispatch:
-    inputs:
-      run-xgoja-smoke:
-        description: "Also run make xgoja-smoke-vectors after package vector tests. Requires xgoja spec replacements to resolve on the runner."
-        required: false
-        default: "false"
-        type: choice
-        options:
-          - "false"
-          - "true"
   schedule:
     - cron: "0 4 * * 0"
 
@@ -64,5 +55,4 @@ jobs:
         run: make test-vectors
 
       - name: Run generated xgoja vector smoke
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.run-xgoja-smoke == 'true' }}
-        run: make xgoja-smoke-vectors
+        run: make xgoja-smoke-vectors XGOJA_VECTOR_SPEC=xgoja-vectors.ci.yaml
