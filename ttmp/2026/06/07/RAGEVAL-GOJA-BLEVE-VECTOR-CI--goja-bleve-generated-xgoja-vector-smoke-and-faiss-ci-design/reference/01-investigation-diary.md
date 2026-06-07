@@ -1545,3 +1545,93 @@ sudo mkdir -p /usr/local/include/faiss /usr/local/lib
 sudo cp -a faiss /usr/local/include/
 sudo cp -a c_api /usr/local/include/faiss/
 ```
+
+## Step 17: Hosted Vector FAISS Smoke passes on main
+
+After the C API header-copy fix was merged, I reran the `Vector FAISS Smoke` workflow on `main`. This run passed end-to-end on GitHub-hosted Ubuntu: FAISS dependencies installed, `libfaiss.so` and `libfaiss_c.so` built, headers and libraries verified, package vector tests passed, and generated xgoja vector smoke passed.
+
+This closes the main validation loop for the optional FAISS workflow. The workflow is no longer only locally validated; it has successfully exercised the clean-runner native dependency path and the generated xgoja binary path.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 13)
+
+**Assistant interpretation:** Continue until the hosted workflow has a successful run and record the final result.
+
+**Inferred user intent:** Finish the vector CI hardening by proving the workflow on GitHub, not just locally.
+
+**Commit (code):** N/A — success diary only.
+
+### What I did
+
+- Merged PR `#6` with the FAISS C API header copy fix.
+- Triggered `Vector FAISS Smoke` on `main`.
+- Watched the workflow to completion.
+
+### Why
+
+The first three hosted runs each uncovered a runner-specific FAISS setup problem. The final run was needed to prove all fixes together.
+
+### What worked
+
+The workflow passed:
+
+```text
+✓ main Vector FAISS Smoke · 27096091410
+✓ vector-faiss in 5m8s
+  ✓ Install FAISS build dependencies
+  ✓ Build and install Bleve-compatible FAISS
+  ✓ Verify FAISS installation
+  ✓ Run vector package tests
+  ✓ Run generated xgoja vector smoke
+```
+
+Run:
+
+```text
+https://github.com/go-go-golems/goja-bleve/actions/runs/27096091410
+```
+
+### What didn't work
+
+N/A in this final run.
+
+### What I learned
+
+The complete hosted FAISS setup requires all of the following on Ubuntu:
+
+- `libgflags-dev` for FAISS CMake configuration,
+- avoiding the broad `make install` target because it builds tests,
+- direct copies of `libfaiss.so` and `libfaiss_c.so`,
+- copying top-level `c_api` headers into `/usr/local/include/faiss/c_api` for the pinned `fff814d` fork layout.
+
+### What was tricky to build
+
+The hosted failures were sequential and each exposed a different assumption from the local machine: missing CMake package dependency, install target pulling test builds, then pinned-source header layout. The final workflow encodes the actual minimal install surface instead of relying on `make install`.
+
+### What warrants a second pair of eyes
+
+- Whether to cache the FAISS build now that the workflow takes about five minutes.
+- Whether to keep the workflow manual/scheduled only or add pull-request path filters later.
+
+### What should be done in the future
+
+- Consider caching FAISS artifacts if the scheduled run is too expensive.
+- Consider adding PR path filters after the workflow has been stable for several runs.
+- Tag a release to validate docsctl publishing now that the Vault role is live.
+
+### Code review instructions
+
+- Review the successful run logs for `Vector FAISS Smoke` run `27096091410` if future FAISS CI failures occur.
+
+### Technical details
+
+Final working hosted workflow includes:
+
+```text
+apt: cmake g++ make libopenblas-dev libgomp1 libgflags-dev
+cmake: FAISS_ENABLE_C_API=ON, BUILD_SHARED_LIBS=ON, CMAKE_CXX_FLAGS=-I$PWD
+build: make -C build -j2 faiss faiss_c
+install: copy faiss + c_api headers and shared libraries directly
+validation: make test-vectors; make xgoja-smoke-vectors XGOJA_VECTOR_SPEC=xgoja-vectors.ci.yaml
+```
