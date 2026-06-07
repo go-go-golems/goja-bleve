@@ -1,0 +1,53 @@
+name: goja-bleve
+appName: goja-bleve
+target:
+  kind: xgoja
+  output: dist/goja-bleve
+packages:
+  - id: goja-bleve
+    import: github.com/go-go-golems/goja-bleve/pkg/xgoja/providers/bleve
+    version: v0.0.0
+    replace: ../..
+  - id: geppetto
+    import: github.com/go-go-golems/geppetto/pkg/js/modules/geppetto/provider
+    version: v0.0.0
+    replace: ../../../geppetto
+  - id: go-go-goja-core
+    import: github.com/go-go-golems/go-go-goja/pkg/xgoja/providers/core
+    replace: ../../../go-go-goja
+  - id: go-go-goja-host
+    import: github.com/go-go-golems/go-go-goja/pkg/xgoja/providers/host
+    replace: ../../../go-go-goja
+modules:
+  - package: goja-bleve
+    name: bleve
+    as: bleve
+  - package: geppetto
+    name: geppetto
+    as: geppetto
+  - package: go-go-goja-core
+    name: path
+    as: path
+  - package: go-go-goja-core
+    name: yaml
+    as: yaml
+  - package: go-go-goja-host
+    name: fs
+    as: fs
+    config:
+      allow: true
+commands:
+  eval:
+    enabled: true
+  run:
+    enabled: true
+  repl:
+    enabled: true
+  jsverbs:
+    enabled: true
+    name: verbs
+    mount: root
+jsverbs:
+  - id: goja-bleve-bundled-verbs
+    path: ./jsverbs
+    embed: true
