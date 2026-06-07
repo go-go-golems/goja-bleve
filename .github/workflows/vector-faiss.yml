@@ -24,7 +24,7 @@ jobs:
       - name: Install FAISS build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake g++ make libopenblas-dev libgomp1
+          sudo apt-get install -y cmake g++ make libopenblas-dev libgomp1 libgflags-dev
 
       - name: Build and install Bleve-compatible FAISS
         run: |

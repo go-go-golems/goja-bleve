@@ -1189,3 +1189,104 @@ The validation split matters: `terraform validate` checks configuration shape us
 ### Technical details
 
 The Terraform role is committed but not applied in this session.
+
+## Step 13: Merge/apply docsctl changes and fix first hosted Vector FAISS workflow failure
+
+I merged both PRs, applied the goja-bleve Vault docsctl role with Terraform, and triggered the newly available `Vector FAISS Smoke` workflow on `main`. The docsctl infrastructure is now live: Vault has the `docsctl-goja-bleve-publisher` identity role, policy, and GitHub Actions JWT auth role.
+
+The first hosted Vector FAISS workflow run failed during FAISS CMake configuration because the runner did not have `gflags` development files installed. I added `libgflags-dev` to the workflow's apt dependency list so FAISS perf-test configuration can resolve `gflagsConfig.cmake` / `gflags-config.cmake` on Ubuntu runners.
+
+### Prompt Context
+
+**User prompt (verbatim):** "go ahead"
+
+**Assistant interpretation:** Merge the prepared PRs, apply the Terraform role if possible, and run the newly available workflows to continue validating the rollout.
+
+**Inferred user intent:** Complete the docs publishing enablement and proceed through the next obvious validation steps without stopping at PR creation.
+
+**Commit (code):** TBD — pending Vector FAISS workflow dependency fix commit.
+
+### What I did
+
+- Merged Terraform PR:
+  - `https://github.com/wesen/terraform/pull/3`
+- Merged goja-bleve PR:
+  - `https://github.com/go-go-golems/goja-bleve/pull/2`
+- Ran a full Terraform plan for the k3s Vault environment.
+- Observed unrelated pending Terraform drift for `bot-signup-gitops-pr`, so I did not apply the full plan.
+- Created and applied a targeted plan for only goja-bleve docsctl resources:
+  - `vault_identity_oidc_role.docsctl_publish["goja-bleve"]`
+  - `vault_policy.docsctl_publish["goja-bleve"]`
+  - `vault_jwt_auth_backend_role.docsctl_publish["goja-bleve"]`
+- Triggered the `Vector FAISS Smoke` workflow on `main`.
+- Inspected the failed workflow logs.
+- Updated `.github/workflows/vector-faiss.yml` to install `libgflags-dev`.
+
+### Why
+
+Docs publishing cannot succeed on a release tag until the Vault role exists. The Vector FAISS workflow needed a first real hosted-runner execution because local validation cannot prove Ubuntu runner native dependency completeness.
+
+### What worked
+
+The targeted Terraform apply succeeded:
+
+```text
+vault_identity_oidc_role.docsctl_publish["goja-bleve"]: Creation complete [id=docsctl-goja-bleve-publisher]
+vault_policy.docsctl_publish["goja-bleve"]: Creation complete [id=gha-docsctl-goja-bleve-publish]
+vault_jwt_auth_backend_role.docsctl_publish["goja-bleve"]: Creation complete [id=auth/github-actions/role/docsctl-goja-bleve-publisher]
+Apply complete! Resources: 3 added, 0 changed, 0 destroyed.
+```
+
+The goja-bleve PR checks were green before merge.
+
+### What didn't work
+
+The first Vector FAISS workflow run failed in the FAISS CMake configure step:
+
+```text
+CMake Error at perf_tests/CMakeLists.txt:21 (find_package):
+  By not providing "Findgflags.cmake" in CMAKE_MODULE_PATH this project has
+  asked CMake to find a package configuration file provided by "gflags", but
+  CMake did not find one.
+
+  Could not find a package configuration file provided by "gflags" with any
+  of the following names:
+
+    gflagsConfig.cmake
+    gflags-config.cmake
+```
+
+Full run:
+
+```text
+https://github.com/go-go-golems/goja-bleve/actions/runs/27095498894
+```
+
+### What I learned
+
+The Bleve-compatible FAISS CMake configuration still configures perf-test subdirectories that require `gflags`, even when the workflow only builds the `faiss` and `faiss_c` targets. Installing `libgflags-dev` is the smallest first fix.
+
+### What was tricky to build
+
+The tricky Terraform part was avoiding unrelated drift. A full plan wanted to create/update `bot-signup-gitops-pr` resources in addition to goja-bleve. To keep this step scoped to docs publishing, I used a targeted apply for only the three goja-bleve docsctl resources and then recorded the remaining unrelated drift separately.
+
+### What warrants a second pair of eyes
+
+- Whether using `-target` for the docsctl apply was acceptable here; it avoided unrelated drift but Terraform warns that targeted applies are exceptional.
+- Whether the FAISS workflow should instead disable perf tests in CMake rather than installing `libgflags-dev`.
+- Whether the remaining Terraform `bot-signup-gitops-pr` drift should be applied in a separate infra maintenance task.
+
+### What should be done in the future
+
+- Push the `libgflags-dev` workflow fix and rerun `Vector FAISS Smoke`.
+- Run a release tag after the docsctl workflow and Vault role are both on `main`, then verify docs publication.
+- Decide what to do with unrelated Terraform drift.
+
+### Code review instructions
+
+- Review `.github/workflows/vector-faiss.yml` and confirm `libgflags-dev` is included with other FAISS build dependencies.
+- Validate by rerunning the `Vector FAISS Smoke` workflow on `main` after merge.
+
+### Technical details
+
+The first hosted failure happened before any Go vector tests ran. It was a native dependency issue in FAISS CMake configuration, not a goja-bleve or xgoja failure.
