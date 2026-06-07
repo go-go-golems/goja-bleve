@@ -56,6 +56,33 @@ func TestJSCanRunCompoundQueriesSortHighlightAndExplain(t *testing.T) {
 	}
 }
 
+func TestSearchSizeZeroReturnsCountOnly(t *testing.T) {
+	vm := newBleveTestVM()
+	value, err := vm.RunString(`
+		const bleve = require("bleve");
+		const idx = bleve.memory().build();
+		idx.index("chunk-1", { text: "privacy screen trees" });
+		idx.index("chunk-2", { text: "privacy hedge" });
+		const req = bleve.search()
+			.query(bleve.match("privacy"))
+			.size(0)
+			.build();
+		const result = idx.search(req);
+		idx.close();
+		({ total: result.total, hitCount: result.hits.length });
+	`)
+	if err != nil {
+		t.Fatalf("size zero search script: %v", err)
+	}
+	got := value.Export().(map[string]any)
+	if got["total"] != int64(2) && got["total"] != uint64(2) && got["total"] != float64(2) {
+		t.Fatalf("total = %#v", got["total"])
+	}
+	if got["hitCount"] != int64(0) && got["hitCount"] != float64(0) {
+		t.Fatalf("hitCount = %#v", got["hitCount"])
+	}
+}
+
 func TestAdditionalQueryFactoriesAreExportedAndUsable(t *testing.T) {
 	vm := newBleveTestVM()
 	value, err := vm.RunString(`

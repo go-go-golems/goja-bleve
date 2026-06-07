@@ -47,6 +47,47 @@ func TestJSCanCreateVectorFieldAndRunKNN(t *testing.T) {
 	}
 }
 
+func TestReopenedVectorIndexUsesStoredMapping(t *testing.T) {
+	vm := newBleveTestVM()
+	indexPath := filepath.Join(t.TempDir(), "idx")
+	value, err := vm.RunString(fmt.Sprintf(`
+		const bleve = require("bleve");
+		const text = bleve.field().text().store(true).build();
+		const embedding = bleve.field().vector(4).similarity("cosine").build();
+		const doc = bleve.docMapping()
+			.dynamic(false)
+			.field("text", text)
+			.field("embedding", embedding)
+			.build();
+		const mapping = bleve.mapping().defaultMapping(doc).build();
+		const created = bleve.create(%q).mapping(mapping).build();
+		created.index("chunk-1", { text: "alpha", embedding: [1, 0, 0, 0] });
+		created.index("chunk-2", { text: "beta", embedding: [0, 1, 0, 0] });
+		created.close();
+
+		const reopened = bleve.open(%q).build();
+		const req = bleve.search()
+			.query(bleve.matchNone())
+			.knnOperator("or")
+			.knn("embedding", [1, 0, 0, 0], 1)
+			.fields(["text"])
+			.build();
+		const result = reopened.search(req);
+		reopened.close();
+		({ total: result.total, firstID: result.hits[0] && result.hits[0].id });
+	`, indexPath, indexPath))
+	if err != nil {
+		t.Fatalf("reopened vector KNN script: %v", err)
+	}
+	got := value.Export().(map[string]any)
+	if got["total"] != int64(1) && got["total"] != uint64(1) && got["total"] != float64(1) {
+		t.Fatalf("total = %#v", got["total"])
+	}
+	if got["firstID"] != "chunk-1" {
+		t.Fatalf("firstID = %#v", got["firstID"])
+	}
+}
+
 func TestJSCanRunHybridRRFFusion(t *testing.T) {
 	vm := newBleveTestVM()
 	indexPath := filepath.Join(t.TempDir(), "idx")

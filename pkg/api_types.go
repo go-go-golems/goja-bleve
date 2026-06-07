@@ -37,7 +37,7 @@ type indexRef struct {
 	name    string
 	path    string
 	index   bleve.Index
-	mapping *mapping.IndexMappingImpl
+	mapping mapping.IndexMapping
 }
 
 type indexBuilderRef struct {

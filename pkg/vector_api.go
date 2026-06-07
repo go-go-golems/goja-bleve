@@ -21,6 +21,6 @@ func setKNNOperator(_ *bleve.SearchRequest, _ string) error {
 	return fmt.Errorf("bleve: KNN search requires building the host with -tags=vectors")
 }
 
-func validateKNNAgainstIndexMapping(_ *mapping.IndexMappingImpl, _ *bleve.SearchRequest) error {
+func validateKNNAgainstIndexMapping(_ mapping.IndexMapping, _ *bleve.SearchRequest) error {
 	return nil
 }

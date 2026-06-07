@@ -14,6 +14,7 @@ func (m *moduleRuntime) searchRequestBuilder() *goja.Object {
 	obj := m.newWrapper(ref, refKindSearchRequest)
 	var queryRefValue *queryRef
 	var size int
+	var sizeSet bool
 	var from int
 	var fields []string
 	var sort []string
@@ -39,6 +40,7 @@ func (m *moduleRuntime) searchRequestBuilder() *goja.Object {
 			return nil, fmt.Errorf("bleve: search size must be non-negative")
 		}
 		size = value
+		sizeSet = true
 		return obj, nil
 	})
 	m.mustSet(obj, "from", func(value int) (*goja.Object, error) {
@@ -136,7 +138,7 @@ func (m *moduleRuntime) searchRequestBuilder() *goja.Object {
 			return nil, fmt.Errorf("bleve: search query is required before build()")
 		}
 		request := bleve.NewSearchRequest(queryRefValue.query)
-		if size > 0 {
+		if sizeSet {
 			request.Size = size
 		}
 		if from > 0 {

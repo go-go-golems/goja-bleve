@@ -40,7 +40,7 @@ func setKNNOperator(request *bleve.SearchRequest, operator string) error {
 	return nil
 }
 
-func validateKNNAgainstIndexMapping(indexMapping *mapping.IndexMappingImpl, request *bleve.SearchRequest) error {
+func validateKNNAgainstIndexMapping(indexMapping mapping.IndexMapping, request *bleve.SearchRequest) error {
 	if indexMapping == nil || request == nil {
 		return nil
 	}

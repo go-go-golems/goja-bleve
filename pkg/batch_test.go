@@ -1,6 +1,11 @@
 package pkg
 
-import "testing"
+import (
+	"testing"
+
+	bleve "github.com/blevesearch/bleve/v2"
+	"github.com/dop251/goja"
+)
 
 func TestJSBatchIndexDeleteAndExecute(t *testing.T) {
 	vm := newBleveTestVM()
@@ -55,6 +60,53 @@ func TestBatchCannotBeReusedAfterExecute(t *testing.T) {
 	}
 	if got := err.Error(); !containsAll(got, []string{"batch has already been executed"}) {
 		t.Fatalf("batch reuse error = %q", got)
+	}
+}
+
+func TestBatchExecuteFailureDoesNotMarkBatchExecuted(t *testing.T) {
+	vm := goja.New()
+	rt := newRuntime(vm)
+	mapping := bleve.NewIndexMapping()
+	idx, err := bleve.NewMemOnly(mapping)
+	if err != nil {
+		t.Fatalf("new memory index: %v", err)
+	}
+	batch := idx.NewBatch()
+	if err := batch.Index("chunk-1", map[string]any{"text": "privacy"}); err != nil {
+		t.Fatalf("index into batch: %v", err)
+	}
+	if err := idx.Close(); err != nil {
+		t.Fatalf("close index before batch execute: %v", err)
+	}
+
+	ref := &batchRef{
+		refBase: refBase{api: rt, kind: refKindBatch},
+		index: &indexRef{
+			refBase: refBase{api: rt, kind: refKindIndex},
+			name:    "closed-underlying-index",
+			index:   idx,
+			mapping: mapping,
+		},
+		batch:     batch,
+		operation: 1,
+	}
+	obj := rt.batchObject(ref)
+	execute, ok := goja.AssertFunction(obj.Get("execute"))
+	if !ok {
+		t.Fatalf("execute is not a function")
+	}
+	if _, err := execute(obj); err == nil {
+		t.Fatalf("expected underlying batch execution failure")
+	}
+	if ref.executed {
+		t.Fatalf("batch was marked executed after failed execute")
+	}
+	reset, ok := goja.AssertFunction(obj.Get("reset"))
+	if !ok {
+		t.Fatalf("reset is not a function")
+	}
+	if _, err := reset(obj); err != nil {
+		t.Fatalf("reset after failed execute: %v", err)
 	}
 }
 

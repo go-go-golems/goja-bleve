@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	bleve "github.com/blevesearch/bleve/v2"
+	"github.com/blevesearch/bleve/v2/mapping"
 	"github.com/dop251/goja"
 )
 
@@ -40,9 +41,11 @@ func (m *moduleRuntime) installIndexBuilderMethods(ref *indexBuilderRef) *goja.O
 }
 
 func (m *moduleRuntime) buildIndex(builder *indexBuilderRef) (*goja.Object, error) {
-	mapping := builder.mapping
-	if mapping == nil {
-		mapping = bleve.NewIndexMapping()
+	var indexMapping mapping.IndexMapping
+	if builder.mapping != nil {
+		indexMapping = builder.mapping
+	} else {
+		indexMapping = bleve.NewIndexMapping()
 	}
 
 	var (
@@ -51,17 +54,20 @@ func (m *moduleRuntime) buildIndex(builder *indexBuilderRef) (*goja.Object, erro
 	)
 	switch builder.mode {
 	case "memory":
-		idx, err = bleve.NewMemOnly(mapping)
+		idx, err = bleve.NewMemOnly(indexMapping)
 	case "create":
 		if strings.TrimSpace(builder.path) == "" {
 			return nil, fmt.Errorf("bleve: create index path is required")
 		}
-		idx, err = bleve.New(builder.path, mapping)
+		idx, err = bleve.New(builder.path, indexMapping)
 	case "open":
 		if strings.TrimSpace(builder.path) == "" {
 			return nil, fmt.Errorf("bleve: open index path is required")
 		}
 		idx, err = bleve.Open(builder.path)
+		if err == nil {
+			indexMapping = idx.Mapping()
+		}
 	default:
 		return nil, fmt.Errorf("bleve: unknown index builder mode %q", builder.mode)
 	}
@@ -73,7 +79,7 @@ func (m *moduleRuntime) buildIndex(builder *indexBuilderRef) (*goja.Object, erro
 	if name == "" {
 		name = "memory"
 	}
-	ref := &indexRef{refBase: refBase{api: m, kind: refKindIndex}, name: name, path: builder.path, index: idx, mapping: mapping}
+	ref := &indexRef{refBase: refBase{api: m, kind: refKindIndex}, name: name, path: builder.path, index: idx, mapping: indexMapping}
 	m.openIndexes[name] = ref
 	return m.indexObject(ref), nil
 }

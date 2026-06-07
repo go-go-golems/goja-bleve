@@ -55,8 +55,11 @@ func (m *moduleRuntime) batchObject(ref *batchRef) *goja.Object {
 		if err := ref.assertUsable(); err != nil {
 			return err
 		}
+		if err := ref.index.index.Batch(ref.batch); err != nil {
+			return err
+		}
 		ref.executed = true
-		return ref.index.index.Batch(ref.batch)
+		return nil
 	})
 	return obj
 }
