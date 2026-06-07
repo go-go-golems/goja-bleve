@@ -136,3 +136,13 @@ Step 12: ggg release preflight passed for docsctl workflow; Terraform plan was b
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/.github/workflows/publish-docs.yaml — Preflight-validated docsctl workflow
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/ttmp/2026/06/07/RAGEVAL-GOJA-BLEVE-VECTOR-CI--goja-bleve-generated-xgoja-vector-smoke-and-faiss-ci-design/reference/01-investigation-diary.md — Step 12 validation and blocker notes
 
+
+## 2026-06-07
+
+Step 13: Merged PRs, applied goja-bleve docsctl Vault resources with targeted Terraform apply, and added libgflags-dev after first Vector FAISS hosted run failed during FAISS CMake configure.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/.github/workflows/vector-faiss.yml — Adds libgflags-dev for FAISS CMake configuration
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/ttmp/2026/06/07/RAGEVAL-GOJA-BLEVE-VECTOR-CI--goja-bleve-generated-xgoja-vector-smoke-and-faiss-ci-design/reference/01-investigation-diary.md — Step 13 merge/apply/workflow failure notes
+
