@@ -41,7 +41,7 @@ jobs:
             .
           make -C build -j2 faiss faiss_c
           sudo mkdir -p /usr/local/include /usr/local/lib
-          sudo cp -a faiss /usr/local/include/
+          sudo cp -a include/faiss /usr/local/include/
           sudo cp build/faiss/libfaiss.so /usr/local/lib/
           sudo cp build/c_api/libfaiss_c.so /usr/local/lib/
           sudo ldconfig
