@@ -820,7 +820,7 @@ We need to update the packakge name of the go.mod generated with xgoja maybe?"
 
 **Inferred user intent:** Make the release/pre-push GoReleaser snapshot work with the generated `cmd/goja-bleve` binary and real project naming.
 
-**Commit (code):** 45eb7f12369969aef8f89fc3ca2257b32fb28ab9 — "Fix release build for generated xgoja binary"
+**Commit (code):** e9a545820c5e4e3ceb60a351555fb68ae2448455 — "Fix release build for generated xgoja binary"
 
 ### What I did
 
