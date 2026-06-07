@@ -146,3 +146,13 @@ Step 13: Merged PRs, applied goja-bleve docsctl Vault resources with targeted Te
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/.github/workflows/vector-faiss.yml — Adds libgflags-dev for FAISS CMake configuration
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/ttmp/2026/06/07/RAGEVAL-GOJA-BLEVE-VECTOR-CI--goja-bleve-generated-xgoja-vector-smoke-and-faiss-ci-design/reference/01-investigation-diary.md — Step 13 merge/apply/workflow failure notes
 
+
+## 2026-06-07
+
+Step 14: Replaced FAISS make install with direct header/library copy after hosted workflow built faiss/faiss_c but failed compiling FAISS tests during install.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/.github/workflows/vector-faiss.yml — Copies FAISS headers/libs directly instead of invoking broad install target
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/ttmp/2026/06/07/RAGEVAL-GOJA-BLEVE-VECTOR-CI--goja-bleve-generated-xgoja-vector-smoke-and-faiss-ci-design/reference/01-investigation-diary.md — Step 14 hosted workflow failure analysis
+
