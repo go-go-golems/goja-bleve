@@ -1457,3 +1457,91 @@ Expected runner layout after this fix:
 /usr/local/lib/libfaiss.so
 /usr/local/lib/libfaiss_c.so
 ```
+
+## Step 16: Copy FAISS source headers plus top-level C API headers
+
+The attempted `include/faiss` fix failed because the pinned `blevesearch/faiss@fff814d` checkout used by CI does not contain an `include/` directory. The C API headers are in the repository's top-level `c_api/` directory, while the C++ implementation headers are in `faiss/`.
+
+I adjusted the workflow to copy both directories into the install layout expected by go-faiss: copy `faiss/` into `/usr/local/include/faiss`, then copy the top-level `c_api/` directory into `/usr/local/include/faiss/c_api`.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 13)
+
+**Assistant interpretation:** Continue resolving the hosted FAISS workflow install layout failures.
+
+**Inferred user intent:** Get the optional hosted Vector FAISS workflow to an end-to-end pass.
+
+**Commit (code):** TBD — pending C API header-copy fix commit.
+
+### What I did
+
+- Merged the previous header-copy PR.
+- Reran `Vector FAISS Smoke` on `main`.
+- Inspected the build step failure.
+- Changed `.github/workflows/vector-faiss.yml` to copy:
+  - `faiss` into `/usr/local/include/`,
+  - `c_api` into `/usr/local/include/faiss/`.
+
+### Why
+
+The pinned FAISS fork layout at `fff814d` has:
+
+```text
+faiss/...
+c_api/IndexBinary_c_ex.h
+```
+
+not:
+
+```text
+include/faiss/...
+```
+
+### What worked
+
+The workflow still builds `libfaiss.so` and `libfaiss_c.so` before the copy step.
+
+### What didn't work
+
+The previous copy command failed:
+
+```text
+cp: cannot stat 'include/faiss': No such file or directory
+```
+
+Run:
+
+```text
+https://github.com/go-go-golems/goja-bleve/actions/runs/27095938320
+```
+
+### What I learned
+
+The local checkout I had inspected contained an `include/faiss` tree, but the pinned CI checkout does not. The workflow should match the exact pinned commit layout, not an evolved local checkout.
+
+### What was tricky to build
+
+The same header file appeared under multiple paths locally, which made it easy to choose the wrong install source. Checking the pinned commit's tree showed the correct source is top-level `c_api/`.
+
+### What warrants a second pair of eyes
+
+- Whether copying the entire C++ source header tree and top-level C API directory is too broad but acceptable for CI.
+
+### What should be done in the future
+
+- Push the C API header copy fix and rerun `Vector FAISS Smoke`.
+
+### Code review instructions
+
+- Confirm `/usr/local/include/faiss/c_api/IndexBinary_c_ex.h` is produced by copying `c_api` into `/usr/local/include/faiss/`.
+
+### Technical details
+
+Correct copy shape for `fff814d`:
+
+```bash
+sudo mkdir -p /usr/local/include/faiss /usr/local/lib
+sudo cp -a faiss /usr/local/include/
+sudo cp -a c_api /usr/local/include/faiss/
+```
