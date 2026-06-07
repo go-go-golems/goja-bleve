@@ -96,7 +96,6 @@ type batchRef struct {
 }
 
 type knnRef struct {
-	refBase
 	field  string
 	vector []float32
 	k      int

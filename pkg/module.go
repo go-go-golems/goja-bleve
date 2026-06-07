@@ -132,6 +132,9 @@ func newRuntime(vm *goja.Runtime) *moduleRuntime {
 	}
 }
 
+// closeAll closes all open indexes. Intended for use in a defer or shutdown hook.
+//
+//nolint:unused // Intended for use in shutdown hooks; not yet wired to a shutdown path.
 func (m *moduleRuntime) closeAll() error {
 	var firstErr error
 	for key, ref := range m.openIndexes {
