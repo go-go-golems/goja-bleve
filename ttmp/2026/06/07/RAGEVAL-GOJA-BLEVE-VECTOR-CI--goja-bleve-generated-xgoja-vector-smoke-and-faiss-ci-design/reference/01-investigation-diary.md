@@ -734,3 +734,67 @@ git stash push -m "temporary unrelated release plumbing before vector CI push" -
 git push origin task/rag-evaluation-system
 git stash pop
 ```
+
+## Step 8: Upload updated implementation diary bundle to reMarkable
+
+I uploaded an updated reMarkable bundle after the implementation and validation diary entries were committed and pushed. This gives the reMarkable copy the implementation trail, not only the initial design document.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 2)
+
+**Assistant interpretation:** Keep the ticket documentation and external review copy current as the implementation progresses.
+
+**Inferred user intent:** Preserve an up-to-date review artifact for reading outside the repository.
+
+**Commit (code):** N/A — documentation delivery only.
+
+### What I did
+
+- Uploaded a bundle containing:
+  - the design guide,
+  - the updated investigation diary.
+- Remote path:
+  - `/ai/2026/06/07/RAGEVAL-GOJA-BLEVE-VECTOR-CI`
+- Uploaded filename:
+  - `goja bleve vector ci implementation update.pdf`
+
+### Why
+
+The first upload happened before implementation. The updated bundle includes the step-by-step implementation notes, validation commands, push attempt, and workflow-dispatch caveat.
+
+### What worked
+
+The upload command returned:
+
+```text
+OK: uploaded goja bleve vector ci implementation update.pdf -> /ai/2026/06/07/RAGEVAL-GOJA-BLEVE-VECTOR-CI
+```
+
+### What didn't work
+
+N/A
+
+### What I learned
+
+N/A
+
+### What was tricky to build
+
+N/A
+
+### What warrants a second pair of eyes
+
+N/A
+
+### What should be done in the future
+
+If the GitHub Actions workflow is run and produces useful logs or failures, append another diary step and upload a refreshed bundle.
+
+### Code review instructions
+
+N/A
+
+### Technical details
+
+Upload command used `remarquee upload bundle` with `--toc-depth 2` and `--non-interactive`.
