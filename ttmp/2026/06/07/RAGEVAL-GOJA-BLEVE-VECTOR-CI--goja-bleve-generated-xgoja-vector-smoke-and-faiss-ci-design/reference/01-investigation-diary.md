@@ -635,3 +635,102 @@ sudo ldconfig
 make test-vectors
 make xgoja-smoke-vectors XGOJA_VECTOR_SPEC=xgoja-vectors.ci.yaml
 ```
+
+## Step 7: Push branch and attempt remote workflow dispatch
+
+I pushed the implementation branch after local validation. The first push attempt failed because the pre-push hook runs a GoReleaser snapshot against the current working tree, and there were unrelated unstaged release-plumbing edits in `.goreleaser.yaml` and `Makefile`. I stashed only those unrelated file changes, pushed successfully with a clean working tree, then restored the stash.
+
+After the branch was pushed, I attempted to trigger the new `Vector FAISS Smoke` workflow with `gh workflow run`. GitHub returned `HTTP 404: Not Found` for the workflow file. This is expected for a newly added workflow that is not present on the repository default branch yet; GitHub generally only exposes `workflow_dispatch` for workflows known on the default branch.
+
+### Prompt Context
+
+**User prompt (verbatim):** (same as Step 2)
+
+**Assistant interpretation:** Push the committed incremental work when ready and try to exercise the remote CI path if possible.
+
+**Inferred user intent:** Move beyond local validation and get as close as possible to proving the GitHub Actions workflow.
+
+**Commit (code):** N/A — push/remote-dispatch diary only.
+
+### What I did
+
+- Attempted:
+  - `git push origin task/rag-evaluation-system`
+- The first push failed in the local pre-push hook during the `release` step.
+- Temporarily stashed unrelated dirty files:
+  - `.goreleaser.yaml`
+  - `Makefile`
+- Re-ran the push successfully.
+- Restored the unrelated stash.
+- Attempted remote workflow dispatch:
+  - `gh workflow run vector-faiss.yml --ref task/rag-evaluation-system`
+
+### Why
+
+The branch needed to be pushed so the new workflow file exists on GitHub. A manual workflow run would be the best validation of the FAISS source-build path, because local validation cannot prove hosted-runner behavior.
+
+### What worked
+
+The branch pushed successfully after temporarily stashing unrelated dirty release-plumbing edits. The pre-push hook passed on the clean tree:
+
+```text
+✔️ test
+✔️ lint
+✔️ release
+To ssh://github.com/go-go-golems/goja-bleve
+ * [new branch]      task/rag-evaluation-system -> task/rag-evaluation-system
+```
+
+The unrelated working-tree edits were restored afterward.
+
+### What didn't work
+
+The first push attempt failed because GoReleaser read the unrelated dirty `.goreleaser.yaml` change and tried to build `./cmd/goja-bleve`, which does not currently exist:
+
+```text
+build failed: exit status 1: main module (github.com/go-go-golems/goja-bleve) does not contain package github.com/go-go-golems/goja-bleve/cmd/goja-bleve
+make: *** [Makefile:61: goreleaser] Error 1
+error: failed to push some refs to 'ssh://github.com/go-go-golems/goja-bleve'
+```
+
+Manual workflow dispatch failed:
+
+```text
+gh workflow run vector-faiss.yml --ref task/rag-evaluation-system
+HTTP 404: Not Found (https://api.github.com/repos/go-go-golems/goja-bleve/actions/workflows/vector-faiss.yml)
+```
+
+Likely cause: the workflow file is new on this branch and not yet present on the default branch, so GitHub does not expose it as a dispatchable workflow by filename.
+
+### What I learned
+
+The unrelated release-plumbing edits affect local pre-push behavior even when they are not staged or committed. For this branch, stashing them was safer than committing unrelated changes or bypassing hooks.
+
+### What was tricky to build
+
+The tricky part was separating the branch's committed implementation from the dirty local environment. The clean-tree push showed that the committed vector CI work passes the repository pre-push hook. The dirty-tree failure should not be attributed to the vector CI commits.
+
+### What warrants a second pair of eyes
+
+- Whether the unrelated `.goreleaser.yaml`/`Makefile` release-plumbing changes should be kept, fixed, or discarded separately.
+- Whether the new workflow should be merged first and then manually dispatched from default branch, or tested through a PR by temporarily adding another trigger.
+
+### What should be done in the future
+
+- After the workflow file exists on the default branch, run `gh workflow run vector-faiss.yml` again.
+- Alternatively, open a PR and let maintainers decide whether to add a temporary branch trigger for first-run testing.
+
+### Code review instructions
+
+- Do not review the unrelated dirty `.goreleaser.yaml` and `Makefile` release-plumbing edits as part of this vector CI slice.
+- Confirm the pushed commits end at `fa5587a` on `origin/task/rag-evaluation-system`.
+
+### Technical details
+
+The push workaround was:
+
+```text
+git stash push -m "temporary unrelated release plumbing before vector CI push" -- .goreleaser.yaml Makefile
+git push origin task/rag-evaluation-system
+git stash pop
+```

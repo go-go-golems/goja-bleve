@@ -75,3 +75,12 @@ Step 6: Final local validation passed for make test-vectors, CI-spec generated x
 
 - /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/ttmp/2026/06/07/RAGEVAL-GOJA-BLEVE-VECTOR-CI--goja-bleve-generated-xgoja-vector-smoke-and-faiss-ci-design/reference/01-investigation-diary.md — Final validation and handoff notes
 
+
+## 2026-06-07
+
+Step 7: Pushed branch after stashing unrelated release-plumbing edits; remote workflow dispatch failed with GitHub 404 because the new workflow is not on default branch yet.
+
+### Related Files
+
+- /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve/ttmp/2026/06/07/RAGEVAL-GOJA-BLEVE-VECTOR-CI--goja-bleve-generated-xgoja-vector-smoke-and-faiss-ci-design/reference/01-investigation-diary.md — Push and remote workflow dispatch notes
+
