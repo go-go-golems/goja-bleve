@@ -1001,7 +1001,7 @@ I also added the matching Vault/Terraform publisher entry in `~/code/wesen/terra
 
 **Inferred user intent:** Make release tags publish goja-bleve Glazed help docs to docs.yolo.scapegoat.dev using the standard infra-tooling reusable workflow and Vault OIDC model.
 
-**Commit (code):** TBD — pending docs publishing workflow and Terraform commits.
+**Commit (code):** 90c63e3343ed4441a717ab9617a6503b5e420af0 — "Enable docsctl publishing"; Terraform: 90ecc70802972893683c5a0e994b4bf2be2e929b — "Add goja-bleve docsctl publisher role"
 
 ### What I did
 
