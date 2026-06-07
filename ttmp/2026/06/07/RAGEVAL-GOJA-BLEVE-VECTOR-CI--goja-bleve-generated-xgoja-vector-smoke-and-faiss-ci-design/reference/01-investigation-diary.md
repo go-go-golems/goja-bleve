@@ -924,7 +924,7 @@ The workflow is not valid. .github/workflows/release.yaml (Line: 80, Col: 3): Er
 
 **Inferred user intent:** Make the release workflow valid without accidentally enabling the disabled docs publishing path or granting unnecessary permissions.
 
-**Commit (code):** f13dc6b46ead0e8731d06fb6c6cfb48334156657 — "Fix release workflow docs publishing template"
+**Commit (code):** b75d00eae8db0dfa00c2ffb4e41cee7fa8a93ad6 — "Fix release workflow docs publishing template"
 
 ### What I did
 
