@@ -3,7 +3,7 @@ module example.com/generated/goja-bleve-vectors
 go 1.26.4
 
 require (
-	github.com/go-go-golems/geppetto v0.11.7
+	github.com/go-go-golems/geppetto v0.13.3
 	github.com/go-go-golems/go-go-goja v0.8.3
 	github.com/go-go-golems/goja-bleve v0.0.0
 )
@@ -79,7 +79,6 @@ require (
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-go-golems/bobatea v0.1.5 // indirect
 	github.com/go-go-golems/glazed v1.3.6 // indirect
-	github.com/go-go-golems/go-emrichen v0.0.11 // indirect
 	github.com/go-go-golems/logcopter v0.1.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
@@ -191,11 +190,6 @@ require (
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/client-go v0.33.2 // indirect
 )
 
-replace github.com/go-go-golems/geppetto => /home/manuel/workspaces/2026-05-27/rag-evaluation-system/geppetto
-
-replace github.com/go-go-golems/go-go-goja => /home/manuel/workspaces/2026-05-27/rag-evaluation-system/go-go-goja
-
-replace github.com/go-go-golems/goja-bleve => /home/manuel/workspaces/2026-05-27/rag-evaluation-system/goja-bleve
+replace github.com/go-go-golems/goja-bleve => ../..
