@@ -105,12 +105,24 @@ const embeddedSpecJSON = `{
       "path": "xgoja_embed/jsverbs/goja_bleve_bundled_verbs",
       "embed": true
     }
-  ]
+  ],
+  "help": {
+    "sources": [
+      {
+        "id": "goja-bleve-docs",
+        "path": "help",
+        "embed": true
+      }
+    ]
+  }
 }
 `
 
 //go:embed xgoja_embed/jsverbs/*
 var embeddedJSVerbs embed.FS
+
+//go:embed help/topics/*.md help/tutorials/*.md
+var embeddedHelp embed.FS
 
 func main() {
 	registry := providerapi.NewProviderRegistry()
@@ -118,7 +130,7 @@ func main() {
 	must(geppetto.Register(registry))
 	must(go_go_goja_core.Register(registry))
 	must(go_go_goja_host.Register(registry))
-	root, err := app.NewRootCommand(app.Options{Providers: registry, SpecJSON: embeddedSpecJSON, EmbeddedJSVerbs: embeddedJSVerbs, EmbeddedHelp: nil, EmbeddedAssets: nil})
+	root, err := app.NewRootCommand(app.Options{Providers: registry, SpecJSON: embeddedSpecJSON, EmbeddedJSVerbs: embeddedJSVerbs, EmbeddedHelp: embeddedHelp, EmbeddedAssets: nil})
 	must(err)
 	if err := root.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)

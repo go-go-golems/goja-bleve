@@ -58,3 +58,8 @@ jsverbs:
   - id: goja-bleve-bundled-verbs
     path: ./jsverbs
     embed: true
+help:
+  sources:
+    - id: goja-bleve-docs
+      path: ./help
+      embed: true
